@@ -26,4 +26,7 @@ features:
   - title: 🛠 实战模拟
     details: 学完理论后用Paper Trading练手，模拟实盘不亏钱
     link: /options/08-paper-trading
+  - title: 🤖 量化能力中心
+    details: 凯的量化工具箱 — 写代码、跑回测、分析策略、从零到实盘的学习体系
+    link: /quant/
 ---

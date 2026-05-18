@@ -11,6 +11,7 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '美股基础', link: '/basics/01-what-is-us-stock' },
       { text: '期权入门', link: '/options/01-what-is-option' },
+      { text: '🤖 量化中心', link: '/quant/' },
     ],
     sidebar: [
       {
@@ -47,6 +48,16 @@ export default defineConfig({
           { text: '16. Cash-Secured Put', link: '/options/06-cash-secured-put' },
           { text: '17. 期权风险管理', link: '/options/07-risk-management' },
           { text: '18. Paper Trading实战', link: '/options/08-paper-trading' },
+        ]
+      },
+      {
+        text: '🤖 量化能力中心',
+        collapsed: false,
+        items: [
+          { text: '首页', link: '/quant/' },
+          { text: '我能直接帮你做什么', link: '/quant/capabilities' },
+          { text: '量化学习路线', link: '/quant/learning-path' },
+          { text: '工具与服务清单', link: '/quant/services' },
         ]
       }
     ],
