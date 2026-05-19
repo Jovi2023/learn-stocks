@@ -9,6 +9,12 @@
         <button v-for="tab in tabs" :key="tab.id" :class="['tab-btn', { active: activeTab === tab.id }]" @click="activeTab = tab.id">
           {{ tab.icon }} {{ tab.label }}
         </button>
+        <button class="save-btn" @click="saveChat" :disabled="savingChat" title="保存对话到 GitHub">
+          {{ savingChat ? '⏳' : '💾' }} 保存
+        </button>
+        <button class="history-btn" @click="showHistory = !showHistory" title="历史对话">
+          📋 历史
+        </button>
       </div>
     </header>
     <div class="main">
@@ -116,19 +122,51 @@
         </div>
       </div>
     </div>
+    
+    <!-- 历史对话弹窗 -->
+    <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>📋 历史对话</h3>
+          <button class="modal-close" @click="showHistory = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="loadingHistory" class="modal-loading">加载中...</div>
+          <div v-else-if="historyList.length === 0" class="modal-empty">
+            暂无历史对话。
+            <p class="modal-hint">在聊天框中发送消息后，点击 💾 保存 可将对话保存到 GitHub Issues。</p>
+          </div>
+          <div v-else class="history-list">
+            <div v-for="item in historyList" :key="item.number" class="history-item" @click="openIssue(item.html_url)">
+              <div class="history-title">{{ item.title.replace('💬 ', '') }}</div>
+              <div class="history-meta">
+                <span>#{{ item.number }}</span>
+                <span>{{ new Date(item.created_at).toLocaleDateString('zh-CN') }}</span>
+                <span>{{ item.comments }} 条回复</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, onMounted } from 'vue'
 import { marked } from 'marked'
 import { welcomeMsg } from './utils/responses.js'
 import { callKai } from './utils/api.js'
+import { saveChatToGitHub, loadChatHistory } from './utils/storage.js'
 
 const activeTab = ref('backtest')
 const inputText = ref('')
 const messages = ref([{ role: 'bot', content: welcomeMsg }])
 const loading = ref(false)
+const savingChat = ref(false)
+const showHistory = ref(false)
+const historyList = ref([])
+const loadingHistory = ref(false)
 const messagesRef = ref(null)
 
 const backtestForm = ref({ market: 'us', symbol: 'AAPL', strategy: 'ma_cross', startDate: '2020-01-01', endDate: '2025-12-31', benchmark: 'SPY' })
@@ -222,6 +260,52 @@ async function callAI(text) {
   scrollToBottom()
 }
 
+async function saveChat() {
+  const msgs = messages.value.filter(m => m.role !== 'system')
+  if (msgs.length <= 1) {
+    messages.value.push({ role: 'bot', content: '⚠️ 还没有可保存的对话内容。' })
+    return
+  }
+  
+  const title = prompt('给这段对话起个标题：', '量化分析 ' + new Date().toLocaleDateString('zh-CN'))
+  if (!title) return
+
+  savingChat.value = true
+  try {
+    const result = await saveChatToGitHub(title, msgs)
+    messages.value.push({ role: 'bot', content: `✅ 对话已保存！\n\n📎 [${title}](${result.url})\n🎫 Issue #${result.number}` })
+    scrollToBottom()
+  } catch (err) {
+    messages.value.push({ role: 'bot', content: '⚠️ 保存失败：' + err.message })
+  }
+  savingChat.value = false
+}
+
+async function loadHistory() {
+  showHistory.value = true
+  loadingHistory.value = true
+  try {
+    historyList.value = await loadChatHistory()
+  } catch (err) {
+    historyList.value = []
+    console.error('加载历史失败:', err)
+  }
+  loadingHistory.value = false
+}
+
+function openIssue(url) {
+  window.open(url, '_blank')
+}
+
+onMounted(() => {
+  // 页面加载时静默加载历史数量
+  loadChatHistory().then(list => {
+    if (list.length > 0) {
+      historyList.value = list
+    }
+  }).catch(() => {})
+})
+
 function scrollToBottom() {
   nextTick(() => {
     if (messagesRef.value) messagesRef.value.scrollTop = messagesRef.value.scrollHeight
@@ -244,6 +328,9 @@ body { background: #0f172a; color: #e2e8f0; }
 .tab-btn { padding: 8px 16px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all 0.15s; }
 .tab-btn:hover { background: #334155; color: #e2e8f0; }
 .tab-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.save-btn, .history-btn { padding: 8px 12px; border: 1px solid #334155; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer; font-size: 13px; margin-left: 4px; transition: all 0.15s; }
+.save-btn:hover, .history-btn:hover { background: #334155; color: #e2e8f0; border-color: #3b82f6; }
+.save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .main { display: flex; flex: 1; overflow: hidden; }
 .chat-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #334155; }
@@ -314,6 +401,22 @@ body { background: #0f172a; color: #e2e8f0; }
 .action-btn { width: 100%; padding: 10px; border: none; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; margin-top: 4px; }
 .action-btn:hover:not(:disabled) { opacity: 0.9; }
 .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { background: #1e293b; border: 1px solid #334155; border-radius: 16px; width: 520px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #334155; }
+.modal-header h3 { font-size: 16px; color: #f1f5f9; }
+.modal-close { background: none; border: none; color: #64748b; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { background: #334155; color: #e2e8f0; }
+.modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.modal-loading { text-align: center; color: #64748b; padding: 40px; }
+.modal-empty { text-align: center; color: #64748b; padding: 40px 20px; }
+.modal-hint { font-size: 13px; margin-top: 12px; color: #475569; }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item { padding: 12px 16px; border: 1px solid #334155; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.history-item:hover { background: #334155; border-color: #3b82f6; }
+.history-title { font-size: 14px; color: #f1f5f9; margin-bottom: 6px; font-weight: 500; }
+.history-meta { display: flex; gap: 12px; font-size: 12px; color: #64748b; }
 
 @media (max-width: 768px) { .side-panel { display: none; } .header-right { display: none; } }
 </style>
