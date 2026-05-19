@@ -4,6 +4,7 @@
       <div class="header-left">
         <span class="logo">🜁</span>
         <h1>凯的量化控制台</h1>
+        <span class="badge">{{ marketLabel }}</span>
       </div>
       <div class="header-right">
         <button v-for="tab in tabs" :key="tab.id" :class="['tab-btn', { active: activeTab === tab.id }]" @click="activeTab = tab.id">
@@ -33,14 +34,28 @@
           </div>
         </div>
         <div class="input-area">
-          <textarea v-model="inputText" placeholder="描述你的量化需求… 比如：回测AAPL双均线策略 2020-2025" @keydown.enter.exact="sendMessage" rows="2"></textarea>
+          <textarea v-model="inputText" placeholder="描述你的量化需求… 比如：回测AAPL双均线策略" @keydown.enter.exact="sendMessage" rows="2"></textarea>
           <button class="send-btn" @click="sendMessage" :disabled="loading || !inputText.trim()">{{ loading ? '⏳' : '发送' }}</button>
         </div>
       </div>
       <div class="side-panel">
+        <!-- 回测面板 -->
         <div v-show="activeTab === 'backtest'" class="panel">
           <h3>📊 策略回测</h3>
-          <div class="form-group"><label>标的代码</label><input v-model="backtestForm.symbol" placeholder="如 AAPL / SPY" /></div>
+          <div class="form-group">
+            <label>市场</label>
+            <div class="toggle-group">
+              <button :class="['toggle-btn', { active: backtestForm.market === 'us' }]" @click="backtestForm.market = 'us'">🇺🇸 美股</button>
+              <button :class="['toggle-btn', { active: backtestForm.market === 'cn' }]" @click="backtestForm.market = 'cn'">🇨🇳 A股</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>标的代码</label>
+            <input v-model="backtestForm.symbol" :placeholder="backtestForm.market === 'us' ? '如 AAPL / SPY / TSLA' : '如 600519 / 000858 / 300750'" />
+            <div class="quick-btns">
+              <button v-for="s in quickSymbols" :key="s" class="chip-btn" @click="backtestForm.symbol = s; syncMarketFromSymbol()">{{ s }}</button>
+            </div>
+          </div>
           <div class="form-group">
             <label>策略</label>
             <select v-model="backtestForm.strategy">
@@ -55,18 +70,43 @@
             <div class="form-group"><label>起始</label><input type="date" v-model="backtestForm.startDate" /></div>
             <div class="form-group"><label>结束</label><input type="date" v-model="backtestForm.endDate" /></div>
           </div>
-          <div class="form-group"><label>对比基准</label><input v-model="backtestForm.benchmark" placeholder="如 SPY（可选）" /></div>
+          <div class="form-group">
+            <label>{{ backtestForm.market === 'us' ? '对比基准' : '对比基准' }}</label>
+            <input v-model="backtestForm.benchmark" :placeholder="backtestForm.market === 'us' ? '如 SPY（可选）' : '如 沪深300（可选）'" />
+          </div>
           <button class="action-btn" @click="runBacktest" :disabled="loading">🚀 跑回测</button>
         </div>
+        <!-- 代码面板 -->
         <div v-show="activeTab === 'code'" class="panel">
           <h3>💻 代码生成</h3>
-          <div class="form-group"><label>要写什么？</label><textarea v-model="codeForm.prompt" placeholder="如：获取TSLA的5年日线数据并画K线图" rows="4"></textarea></div>
+          <div class="form-group">
+            <label>市场</label>
+            <div class="toggle-group">
+              <button :class="['toggle-btn', { active: codeForm.market === 'us' }]" @click="codeForm.market = 'us'">🇺🇸 美股</button>
+              <button :class="['toggle-btn', { active: codeForm.market === 'cn' }]" @click="codeForm.market = 'cn'">🇨🇳 A股</button>
+            </div>
+          </div>
+          <div class="form-group"><label>要写什么？</label><textarea v-model="codeForm.prompt" :placeholder="codeForm.market === 'us' ? '如：获取TSLA的5年日线数据并画K线图' : '如：获取贵州茅台的5年日线数据'" rows="4"></textarea></div>
           <div class="form-group"><label>语言</label><select v-model="codeForm.lang"><option value="python">Python</option><option value="javascript">JavaScript</option></select></div>
           <button class="action-btn" @click="generateCode" :disabled="loading">✨ 生成代码</button>
         </div>
+        <!-- 数据面板 -->
         <div v-show="activeTab === 'data'" class="panel">
           <h3>📈 数据查询</h3>
-          <div class="form-group"><label>股票代码</label><input v-model="dataForm.symbol" placeholder="如 AAPL" /></div>
+          <div class="form-group">
+            <label>市场</label>
+            <div class="toggle-group">
+              <button :class="['toggle-btn', { active: dataForm.market === 'us' }]" @click="dataForm.market = 'us'">🇺🇸 美股</button>
+              <button :class="['toggle-btn', { active: dataForm.market === 'cn' }]" @click="dataForm.market = 'cn'">🇨🇳 A股</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>股票代码</label>
+            <input v-model="dataForm.symbol" :placeholder="dataForm.market === 'us' ? '如 AAPL' : '如 600519'" />
+            <div class="quick-btns">
+              <button v-for="s in quickSymbols" :key="s" class="chip-btn" @click="dataForm.symbol = s; syncDataMarket()">{{ s }}</button>
+            </div>
+          </div>
           <div class="form-group">
             <label>数据类型</label>
             <select v-model="dataForm.type">
@@ -79,6 +119,7 @@
           <div class="form-group" v-if="dataForm.type === 'price'"><label>时间范围（年）</label><select v-model="dataForm.period"><option value="1y">1年</option><option value="5y">5年</option><option value="10y">10年</option><option value="max">全部</option></select></div>
           <button class="action-btn" @click="queryData" :disabled="loading">🔍 查询</button>
         </div>
+        <!-- 分析面板 -->
         <div v-show="activeTab === 'analyze'" class="panel">
           <h3>🧠 策略分析</h3>
           <div class="form-group"><label>描述或粘贴你的策略</label><textarea v-model="analyzeForm.description" placeholder="描述你的策略逻辑，或粘贴策略代码…" rows="6"></textarea></div>
@@ -90,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { marked } from 'marked'
 import { Chart, registerables } from 'chart.js'
 import { backtestReply, codeReply, dataReply, analyzeReply, defaultReply, welcomeMsg } from './utils/responses.js'
@@ -104,9 +145,9 @@ const loading = ref(false)
 const messagesRef = ref(null)
 const chartRefs = ref({})
 
-const backtestForm = ref({ symbol: 'AAPL', strategy: 'ma_cross', startDate: '2020-01-01', endDate: '2025-12-31', benchmark: 'SPY' })
-const codeForm = ref({ prompt: '', lang: 'python' })
-const dataForm = ref({ symbol: 'AAPL', type: 'price', period: '5y' })
+const backtestForm = ref({ market: 'us', symbol: 'AAPL', strategy: 'ma_cross', startDate: '2020-01-01', endDate: '2025-12-31', benchmark: 'SPY' })
+const codeForm = ref({ market: 'us', prompt: '', lang: 'python' })
+const dataForm = ref({ market: 'us', symbol: 'AAPL', type: 'price', period: '5y' })
 const analyzeForm = ref({ description: '' })
 
 const tabs = [
@@ -115,6 +156,45 @@ const tabs = [
   { id: 'data', icon: '📈', label: '查数据' },
   { id: 'analyze', icon: '🧠', label: '分析' }
 ]
+
+const marketLabel = computed(() => {
+  // 根据活跃面板决定显示的标签
+  return ''
+})
+
+const quickSymbols = computed(() => {
+  // 根据哪个面板活跃来决定快捷按钮
+  return getChips(activeTab.value)
+})
+
+function getChips(tab) {
+  if (tab === 'data' || tab === 'backtest') {
+    // 检查当前活跃面板的市场选择
+    const m = tab === 'data' ? dataForm.value.market : backtestForm.value.market
+    return m === 'us'
+      ? ['AAPL', 'SPY', 'TSLA', 'QQQ']
+      : ['600519', '000858', '300750', '000333']
+  }
+  return []
+}
+
+function syncMarketFromSymbol() {
+  const s = backtestForm.value.symbol
+  if (s.startsWith('0') || s.startsWith('3') || s.startsWith('6')) {
+    backtestForm.value.market = 'cn'
+  } else {
+    backtestForm.value.market = 'us'
+  }
+}
+
+function syncDataMarket() {
+  const s = dataForm.value.symbol
+  if (s.startsWith('0') || s.startsWith('3') || s.startsWith('6')) {
+    dataForm.value.market = 'cn'
+  } else {
+    dataForm.value.market = 'us'
+  }
+}
 
 function renderMarkdown(text) {
   return marked.parse(text, { breaks: true })
@@ -162,11 +242,17 @@ function sendMessage(e) {
 function runBacktest() {
   const f = backtestForm.value
   const labels = { ma_cross: '双均线交叉', rsi: 'RSI均值回归', bollinger: '布林带突破', macd: 'MACD策略', momentum: '动量策略' }
-  const msg = '帮我回测 **' + f.symbol + '** 的 **' + (labels[f.strategy] || f.strategy) + '** 策略\n\n周期：' + f.startDate + ' 至 ' + f.endDate + '\n基准对比：' + (f.benchmark || '无')
+  const marketEmoji = f.market === 'cn' ? '🇨🇳 A股' : '🇺🇸 美股'
+  const msg = marketEmoji + ' 回测 **' + f.symbol + '** 的 **' + (labels[f.strategy] || f.strategy) + '** 策略\n\n周期：' + f.startDate + ' 至 ' + f.endDate + '\n基准对比：' + (f.benchmark || '无')
   messages.value.push({ role: 'user', content: msg })
   loading.value = true
   scrollToBottom()
-  processRequest(msg)
+  processNext(f.symbol, labels[f.strategy] || f.strategy, f.benchmark)
+}
+
+function processNext(symbol, strategyName, benchmark) {
+  // 实际处理函数
+  processUserRequest(symbol, strategyName, benchmark)
 }
 
 function generateCode() {
@@ -176,17 +262,27 @@ function generateCode() {
   messages.value.push({ role: 'user', content: msg })
   loading.value = true
   scrollToBottom()
-  processRequest(msg)
+  setTimeout(() => {
+    const reply = codeReply(codeForm.value.market === 'cn' ? '600519' : 'AAPL')
+    messages.value.push({ role: 'bot', content: reply.content, chartData: reply.chartData || null })
+    loading.value = false
+    scrollToBottom()
+  }, 1500 + Math.random() * 1500)
 }
 
 function queryData() {
   const f = dataForm.value
   const typeLabels = { price: '历史行情', financial: '财务数据', options: '期权链', info: '股票信息' }
-  const msg = '查询 **' + f.symbol + '** 的' + (typeLabels[f.type] || f.type) + (f.type === 'price' ? '（' + f.period + '）' : '')
+  const msg = (f.market === 'cn' ? '🇨🇳 A股' : '🇺🇸 美股') + ' 查询 **' + f.symbol + '** 的' + (typeLabels[f.type] || f.type) + (f.type === 'price' ? '（' + f.period + '）' : '')
   messages.value.push({ role: 'user', content: msg })
   loading.value = true
   scrollToBottom()
-  processRequest(msg)
+  setTimeout(() => {
+    const reply = dataReply(f.symbol, f.type)
+    messages.value.push({ role: 'bot', content: reply.content, chartData: reply.chartData || null })
+    loading.value = false
+    scrollToBottom()
+  }, 1500 + Math.random() * 1500)
 }
 
 function analyzeStrategy() {
@@ -196,19 +292,50 @@ function analyzeStrategy() {
   messages.value.push({ role: 'user', content: msg })
   loading.value = true
   scrollToBottom()
-  processRequest(msg)
+  setTimeout(() => {
+    const reply = analyzeReply()
+    messages.value.push({ role: 'bot', content: reply.content, chartData: reply.chartData || null })
+    loading.value = false
+    scrollToBottom()
+  }, 1500 + Math.random() * 1500)
+}
+
+async function processUserRequest(symbol, strategyName, benchmark) {
+  await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500))
+  const reply = backtestReply(symbol, strategyName, benchmark)
+  messages.value.push({ role: 'bot', content: reply.content, chartData: reply.chartData || null })
+  loading.value = false
+  await nextTick()
+  const lastIdx = messages.value.length - 1
+  if (messages.value[lastIdx].chartData) {
+    await renderChart(lastIdx)
+  }
+  scrollToBottom()
 }
 
 async function processRequest(userText) {
   await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500))
   const lower = userText.toLowerCase()
+
+  // A 股代码检测
+  const cnMatch = userText.match(/(0\d{5}|3\d{5}|6\d{5})/)
+  const usMatch = userText.match(/\b([A-Z]{1,5})\b/)
+  let symbol = 'AAPL'
+  if (cnMatch) {
+    symbol = cnMatch[1]
+  } else if (usMatch && !['回测','代码','分析','查','写','帮我'].includes(usMatch[1])) {
+    symbol = usMatch[1]
+  }
+
+  let strategyName = '双均线交叉'
+
   let reply
-  if (lower.includes('回测') || lower.includes('均线') || lower.includes('ma_cross')) {
-    reply = backtestReply()
+  if (lower.includes('回测') || lower.includes('均线')) {
+    reply = backtestReply(symbol, strategyName, 'SPY')
   } else if (lower.includes('查') || lower.includes('数据') || lower.includes('行情') || lower.includes('信息')) {
-    reply = dataReply()
+    reply = dataReply(symbol, 'price')
   } else if (lower.includes('代码') || lower.includes('写')) {
-    reply = codeReply()
+    reply = codeReply(symbol)
   } else if (lower.includes('分析')) {
     reply = analyzeReply()
   } else {
@@ -242,6 +369,7 @@ body { background: #0f172a; color: #e2e8f0; }
 .header-left { display: flex; align-items: center; gap: 10px; }
 .logo { font-size: 28px; }
 .header-left h1 { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+.badge { font-size: 11px; color: #94a3b8; background: #334155; padding: 2px 8px; border-radius: 4px; display: none; }
 .header-right { display: flex; gap: 4px; }
 
 .tab-btn { padding: 8px 16px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; transition: all 0.15s; }
@@ -298,11 +426,24 @@ body { background: #0f172a; color: #e2e8f0; }
 .send-btn:hover:not(:disabled) { background: #2563eb; }
 .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.side-panel { width: 340px; overflow-y: auto; padding: 20px; flex-shrink: 0; }
+.side-panel { width: 360px; overflow-y: auto; padding: 20px; flex-shrink: 0; }
 .side-panel::-webkit-scrollbar { width: 6px; }
 .side-panel::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
 
 .panel h3 { font-size: 16px; margin-bottom: 16px; color: #f1f5f9; }
+
+/* 市场切换按钮 */
+.toggle-group { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }
+.toggle-btn { flex: 1; padding: 6px 12px; border: none; background: #1e293b; color: #94a3b8; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.toggle-btn:hover { background: #334155; }
+.toggle-btn.active { background: #3b82f6; color: #fff; }
+.toggle-btn:first-child { border-right: 1px solid #334155; }
+
+/* 快捷代码按钮 */
+.quick-btns { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.chip-btn { padding: 3px 10px; border: 1px solid #334155; border-radius: 12px; background: transparent; color: #64748b; font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: 'SF Mono', 'Fira Code', monospace; }
+.chip-btn:hover { border-color: #3b82f6; color: #3b82f6; background: rgba(59,130,246,0.1); }
+
 .form-group { margin-bottom: 14px; }
 .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 4px; font-weight: 500; }
 .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 14px; outline: none; font-family: inherit; transition: border-color 0.15s; }

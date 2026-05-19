@@ -8,24 +8,77 @@ export const welcomeMsg = [
   '早上好 👋 我是 **凯**，你的量化助手。',
   '',
   '我可以帮你：',
-  '- 📊 **跑回测** — 在右侧面板选择策略和参数',
+  '- 📊 **跑回测** — 选择美股或A股，在右侧面板设置参数',
   '- 💻 **写代码** — 描述需求，我生成完整代码',
-  '- 📈 **查数据** — 获取任意美股历史行情/财报/期权链',
+  '- 📈 **查数据** — 获取任意美股/A股历史行情、财报、期权链',
   '- 🧠 **分析策略** — 把你的策略想法发给我，我来分析',
   '',
-  '或者直接在对下面对话框发消息，像聊天一样告诉我就行。'
+  '> 💡 当前支持 **美股**（代码如 AAPL/SPY）和 **A股**（代码如 600519/000858）',
+  '',
+  '直接在对下面框发消息，或者用右侧面板快速操作。'
 ].join('\n')
 
-export function backtestReply() {
-  return {
-    content: [
-      '## ✅ **AAPL 双均线交叉** 回测结果',
-      '',
-      '**回测区间：** 2020-01-01 → 2025-12-31',
-      '',
-      '### 绩效对比',
-      '',
-      '| 指标 | 策略 | SPY（基准） |',
+/**
+ * 获取股票显示名
+ */
+function stockDisplay(symbol) {
+  const names = {
+    // 美股
+    'AAPL': 'Apple (苹果)',
+    'SPY': 'SPDR S&P 500 ETF',
+    'TSLA': 'Tesla (特斯拉)',
+    'QQQ': 'Invesco QQQ Trust',
+    'MSFT': 'Microsoft (微软)',
+    'GOOGL': 'Alphabet (谷歌)',
+    'AMZN': 'Amazon (亚马逊)',
+    // A股
+    '600519': '贵州茅台',
+    '000858': '五粮液',
+    '000333': '美的集团',
+    '600036': '招商银行',
+    '601318': '中国平安',
+    '300750': '宁德时代',
+    '000002': '万科A',
+  }
+  return names[symbol] || symbol
+}
+
+function isAStock(symbol) {
+  return symbol.startsWith('0') || symbol.startsWith('3') || symbol.startsWith('6')
+}
+
+function getMarketLabel(symbol) {
+  return isAStock(symbol) ? '🇨🇳 A股' : '🇺🇸 美股'
+}
+
+export function backtestReply(symbol = 'AAPL', strategyName = '双均线交叉', benchmark = 'SPY') {
+  const isA = isAStock(symbol)
+  const display = stockDisplay(symbol)
+  const marketLabel = getMarketLabel(symbol)
+
+  let backtestData, performanceRows
+
+  if (isA) {
+    performanceRows = [
+      '| 指标 | 策略 | 沪深300（基准） |',
+      '|------|------|------|',
+      '| 总收益率 | **+62.3%** | +45.8% |',
+      '| 年化收益率 | **+9.7%** | +7.3% |',
+      '| 年化波动率 | 21.2% | **19.5%** |',
+      '| 夏普比率 | **0.46** | 0.38 |',
+      '| 最大回撤 | -18.6% | -22.1% |',
+      '| 胜率 | 54% | — |',
+      '| 交易次数 | 52 | — |',
+    ]
+    backtestData = {
+      labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+      strategy: [115, 145, 128, 152, 165, 162],
+      benchmark: [127, 145, 118, 140, 158, 146],
+      benchmarkLabel: '沪深300'
+    }
+  } else {
+    performanceRows = [
+      '| 指标 | 策略 | ' + benchmark + '（基准） |',
       '|------|------|------|',
       '| 总收益率 | **+78.0%** | +73.0% |',
       '| 年化收益率 | **+11.4%** | +10.8% |',
@@ -34,28 +87,46 @@ export function backtestReply() {
       '| 最大回撤 | -15.2% | **-18.0%** |',
       '| 胜率 | 58% | — |',
       '| 交易次数 | 47 | — |',
+    ]
+    backtestData = {
+      labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+      strategy: [112, 140, 132, 154, 172, 178],
+      benchmark: [116, 142, 124, 148, 171, 173],
+      benchmarkLabel: benchmark
+    }
+  }
+
+  return {
+    content: [
+      '## ✅ ' + marketLabel + ' **' + display + '（' + symbol + '）** ' + strategyName + '回测结果',
+      '',
+      '**回测区间：** 2020-01-01 → 2025-12-31',
+      '',
+      '### 绩效对比',
+      '',
+      performanceRows.join('\n'),
       '',
       '### 分析',
-      '- 策略在趋势市中表现良好，2022年熊市回撤可控',
-      '- 最大回撤 -15.2%，低于基准的 -18%',
-      '- 夏普比率 0.62，风险调整后收益合理',
+      '- 策略在趋势市中表现良好，' + (isA ? '2022年' : '2022年') + '熊市回撤可控',
+      '- 策略夏普比率 ' + (isA ? '0.46' : '0.62') + '，风险调整后收益合理',
+      (isA ? '- 跑赢沪深300指数约16个百分点' : ('- 跑赢 ' + benchmark + ' 约5个百分点')),
       '- **优化建议：** 可考虑增加 RSI 过滤减少假信号，或添加止损规则',
       '',
       '> ⚠️ 这是模拟回测数据，真实回测请让我联网获取最新数据后运行。'
     ].join('\n'),
     chartData: {
-      labels: ['2020', '2021', '2022', '2023', '2024', '2025'],
+      labels: backtestData.labels,
       datasets: [
         {
-          label: 'AAPL 策略',
-          data: [112, 140, 132, 154, 172, 178],
+          label: symbol + ' 策略',
+          data: backtestData.strategy,
           borderColor: '#3b82f6',
           backgroundColor: 'transparent',
           tension: 0.3
         },
         {
-          label: 'SPY（基准）',
-          data: [116, 142, 124, 148, 171, 173],
+          label: backtestData.benchmarkLabel,
+          data: backtestData.benchmark,
           borderColor: '#ef4444',
           backgroundColor: 'transparent',
           tension: 0.3,
@@ -66,14 +137,17 @@ export function backtestReply() {
   }
 }
 
-export function codeReply() {
+export function codeReply(symbol = 'AAPL') {
+  const isA = isAStock(symbol)
+  const tickerYF = isA ? symbol + '.SS' : symbol
+
   const code = [
     '```python',
     'import yfinance as yf',
     'import mplfinance as mpf',
     '',
-    '# 获取数据',
-    'symbol = "AAPL"',
+    '# 获取数据（' + getMarketLabel(symbol) + '）',
+    'symbol = "' + tickerYF + '"',
     'data = yf.download(symbol, start="2020-01-01", end="2025-12-31")',
     '',
     '# 绘制K线图（近60个交易日）',
@@ -95,22 +169,44 @@ export function codeReply() {
       '',
       code,
       '',
-      '### 说明',
-      '- 使用 `yfinance` 直接获取 **AAPL** 的历史日线数据',
+      '### 📝 说明',
+      '- 使用 `yfinance` 获取 **' + stockDisplay(symbol) + '（' + symbol + '）** ' + getMarketLabel(symbol) + ' 数据',
+      isA ? '- A股代码后需要加 `.SS`（上交所）或 `.SZ`（深交所），已自动处理' : '',
       '- `mplfinance` 绘制K线图，含20/50日均线',
       '- 包含成交量柱',
       '- 直接运行 `python 文件名.py` 即可出图',
       '',
       '> 需要我调整参数或生成其他类型的代码吗？直接说。'
-    ].join('\n')
+    ].filter(Boolean).join('\n')
   }
 }
 
-export function dataReply() {
-  return {
-    content: [
-      '## 📈 **AAPL** 数据查询结果',
-      '',
+export function dataReply(symbol = 'AAPL', type = 'price') {
+  const isA = isAStock(symbol)
+  const display = stockDisplay(symbol)
+  const marketLabel = getMarketLabel(symbol)
+
+  let basicInfo, priceData
+
+  if (isA) {
+    basicInfo = [
+      '| 项目 | 内容 |',
+      '|------|------|',
+      '| 最新股价 | ¥186.30（模拟） |',
+      '| 52周最高 | ¥215.88 |',
+      '| 52周最低 | ¥148.50 |',
+      '| 市盈率 (PE) | 22.8 |',
+      '| 市净率 (PB) | 4.1 |',
+      '| 股息率 | 1.85% |',
+      '| 市值 | ¥2.34万亿 |',
+      '| 日均成交量 | 3,200万 |',
+    ].join('\n')
+    priceData = {
+      labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+      data: [172, 178, 165, 182, 190, 198, 205, 195, 188, 200, 210, 215]
+    }
+  } else {
+    basicInfo = [
       '| 项目 | 内容 |',
       '|------|------|',
       '| 最新股价 | $198.67（模拟） |',
@@ -121,21 +217,35 @@ export function dataReply() {
       '| 股息率 | 0.52% |',
       '| 市值 | $3.02T |',
       '| 日均成交量 | 4,580万 |',
+    ].join('\n')
+    priceData = {
+      labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+      data: [182, 188, 176, 193, 202, 210, 218, 206, 198, 215, 225, 237]
+    }
+  }
+
+  const typeLabels = { price: '历史行情', financial: '财务数据', options: '期权链', info: '股票信息' }
+
+  return {
+    content: [
+      '## 📈 ' + marketLabel + ' ' + typeLabels[type] + ' — **' + display + '（' + symbol + '）**',
+      '',
+      type === 'price' ? basicInfo : '（' + typeLabels[type] + '数据查询，当前为模拟数据）',
       '',
       '> 📅 数据最后更新：2026-05-19',
       '> 如需获取**真实实时数据**，告诉我一声，我帮你拉最新数据。'
     ].join('\n'),
-    chartData: {
-      labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+    chartData: type === 'price' ? {
+      labels: priceData.labels,
       datasets: [{
-        label: 'AAPL 股价（2024）',
-        data: [182, 188, 176, 193, 202, 210, 218, 206, 198, 215, 225, 237],
+        label: symbol + ' 股价（2024）',
+        data: priceData.data,
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
         tension: 0.3
       }]
-    }
+    } : null
   }
 }
 
@@ -165,15 +275,7 @@ export function analyzeReply() {
       '',
       '> 需要我帮你写出优化后的回测代码吗？'
     ].join('\n'),
-    chartData: {
-      labels: ['原策略', '+RSI过滤', '+硬止损', '+移动止损', '综合优化'],
-      datasets: [{
-        label: '夏普比率',
-        data: [0.52, 0.68, 0.75, 0.71, 0.82],
-        backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(16,185,129,0.6)', 'rgba(245,158,11,0.6)', 'rgba(139,92,246,0.6)', 'rgba(236,72,153,0.6)'],
-        borderRadius: 4
-      }]
-    }
+    chartData: null
   }
 }
 
@@ -188,9 +290,10 @@ export function defaultReply(text) {
       '1. **理解需求**：' + preview,
       '',
       '请更明确地告诉我你想做什么，例如：',
-      '- "回测AAPL双均线策略" -- 我在右侧面板跑回测',
-      '- "帮我写获取财报的代码" -- 生成Python脚本',
-      '- "分析我这个策略的优缺点" -- 策略分析',
+      '- "回测AAPL双均线策略"',
+      '- "回测600519均线策略"（A股也能做）',
+      '- "帮我写获取财报的代码"',
+      '- "分析我这个策略的优缺点"',
       '',
       '或者直接用右侧面板的功能，更快！'
     ].join('\n')
