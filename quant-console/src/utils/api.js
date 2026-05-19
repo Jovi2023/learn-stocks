@@ -4,11 +4,9 @@
 
 export const API_CONFIG = {
   // Serveo 隧道公网 URL
-  baseUrl: 'https://a5d7d84e4e56e2a8-113-69-209-174.serveousercontent.com',
+  baseUrl: 'http://101.32.186.116:8888',
   // OpenClaw Gateway auth token
   get token() {
-    // 生产环境不要硬编码，但这是本机网关的个人 token
-    // 从配置中读取
     return '7c1f4adfe52e2f016d2329e9c6304e20a1bb5540b7667349'
   },
   // 默认 agent ID
