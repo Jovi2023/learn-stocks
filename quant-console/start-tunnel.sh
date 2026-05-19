@@ -1,90 +1,92 @@
 #!/bin/bash
-# 启动 frp 隧道 + CORS 代理
-# 用于量化控制台 API 代理
+# 确保 frp 隧道和代理服务持续运行
+# 用法：bash ~/jovi2026/quant-console/start-tunnel.sh
 
-set -e
-
-PATH="$HOME/.npm-global/bin:$PATH"
-FRPC_BIN="$HOME/.npm-global/bin/frpc"
 FRPC_CONF="$HOME/.openclaw/frpc.toml"
 CORS_PROXY="$HOME/jovi2026/quant-console/cors-proxy.cjs"
 GITHUB_PROXY="$HOME/jovi2026/quant-console/github-proxy.cjs"
+GITHUB_ENV="$HOME/.openclaw/github.env"
+LOG_DIR="$HOME/.openclaw/logs"
+mkdir -p "$LOG_DIR"
 
 # 加载 GitHub Token
-if [ -f "$HOME/.openclaw/github.env" ]; then
-  export $(grep -v '^#' $HOME/.openclaw/github.env | xargs)
+if [ -f "$GITHUB_ENV" ]; then
+  export $(grep -v '^#' "$GITHUB_ENV" | xargs)
 fi
 
 if [ -z "$GITHUB_TOKEN" ]; then
   echo "⚠️ 未设置 GITHUB_TOKEN，保存对话功能将不可用"
 fi
 
-echo "🜁 启动量化控制台后端服务"
-echo ""
-
-# 1. 启动 CORS 代理 (如果还没启动)
-if ! pgrep -f "cors-proxy" > /dev/null 2>&1; then
-  echo "📡 启动 CORS 代理 (18888 → 18789)..."
-  node "$CORS_PROXY" &
-  sleep 2
-  if pgrep -f "cors-proxy" > /dev/null 2>&1; then
-    echo "   ✅ 已启动"
+# 守护函数：确保进程一直运行
+ensure_running() {
+  local name="$1"
+  local cmd="$2"
+  local logfile="$3"
+  
+  if pgrep -f "$name" > /dev/null 2>&1; then
+    echo "✅ $name 已在运行"
   else
-    echo "   ❌ 启动失败"
-    exit 1
-  fi
-else
-  echo "📡 CORS 代理已在运行"
-fi
-
-# 3. 启动 GitHub 代理
-if ! pgrep -f "github-proxy" > /dev/null 2>&1; then
-  if [ -n "$GITHUB_TOKEN" ]; then
-    echo "📝 启动 GitHub Issues 代理..."
-    export GITHUB_TOKEN
-    node "$GITHUB_PROXY" &
+    echo "🚀 启动 $name..."
+    nohup bash -c "$cmd" > "$logfile" 2>&1 &
     sleep 2
-    if pgrep -f "github-proxy" > /dev/null 2>&1; then
-      echo "   ✅ 已启动"
+    if pgrep -f "$name" > /dev/null 2>&1; then
+      echo "   ✅ 已启动 (PID $(pgrep -f "$name" | head -1))"
     else
       echo "   ❌ 启动失败"
     fi
   fi
-else
-  echo "📝 GitHub 代理已在运行"
-fi
+}
 
-# 2. 启动 frp 隧道
-if ! pgrep -f "frpc" > /dev/null 2>&1; then
-  echo "🔗 启动 frp 隧道 → 101.32.186.116..."
-  nohup "$FRPC_BIN" -c "$FRPC_CONF" > /tmp/frpc.log 2>&1 &
-  sleep 3
-  if pgrep -f "frpc" > /dev/null 2>&1; then
-    echo "   ✅ 隧道已连接"
-  else
-    echo "   ❌ 隧道启动失败，查看日志: cat /tmp/frpc.log"
-    exit 1
-  fi
-else
-  echo "🔗 frp 隧道已在运行"
+# 1. frpc
+echo ""
+echo "=== 启动服务 ==="
+ensure_running "frpc" "frpc -c \"$FRPC_CONF\" 2>&1" "$LOG_DIR/frpc.log"
+
+# 2. CORS 代理
+ensure_running "cors-proxy.cjs" "node \"$CORS_PROXY\" 2>&1" "$LOG_DIR/cors-proxy.log"
+
+# 3. GitHub 代理
+if [ -n "$GITHUB_TOKEN" ]; then
+  ensure_running "github-proxy.cjs" "GITHUB_TOKEN=$GITHUB_TOKEN node \"$GITHUB_PROXY\" 2>&1" "$LOG_DIR/github-proxy.log"
 fi
 
 echo ""
 echo "========================================"
-echo "✅ 全部就绪！"
+echo "✅ 服务状态："
 echo ""
-echo "API 地址："
-echo "  https://api.jovi-trade.cn"
-echo "  https://api.jovi-trade.cn/api/save-chat"
+echo "  本地服务："
+echo "    Gateway:     http://127.0.0.1:18789"
+echo "    CORS 代理:   http://127.0.0.1:18888"
+echo "    GitHub 代理: http://127.0.0.1:18889"
 echo ""
-echo "控制台页面："
-echo "  https://jovi2023.github.io/learn-stocks/quant-console/"
+echo "  公网入口："
+echo "    HTTPS API:   https://api.jovi-trade.cn"
+echo "    保存对话:    https://api.jovi-trade.cn/api/save-chat"
 echo ""
-echo "frp 管理面板："
-echo "  http://101.32.186.116:7500"
-echo "   用户名: admin  密码: Cm86871402"
+echo "  控制台页面："
+echo "    https://jovi2023.github.io/learn-stocks/quant-console/"
 echo ""
-echo "Nginx 管理："
-echo "  ssh ubuntu@101.32.186.116"
-echo "  sudo systemctl reload nginx"
-echo "========================================
+echo "========================================"
+
+# 如果 frpc 不在运行，每 30 秒检查一次
+if ! pgrep -f "frpc" > /dev/null 2>&1; then
+  echo "⚠️ frpc 未运行，启动保活监控..."
+  while true; do
+    sleep 30
+    if ! pgrep -f "frpc" > /dev/null 2>&1; then
+      echo "[$(date)] frpc 已断开，重新启动..."
+      frpc -c "$FRPC_CONF" >> "$LOG_DIR/frpc.log" 2>&1 &
+    fi
+    # 也检查其他服务
+    for proc in "cors-proxy.cjs" "github-proxy.cjs"; do
+      if ! pgrep -f "$proc" > /dev/null 2>&1; then
+        echo "[$(date)] $proc 已停止，重新启动..."
+        case "$proc" in
+          "cors-proxy.cjs") node "$CORS_PROXY" >> "$LOG_DIR/cors-proxy.log" 2>&1 & ;;
+          "github-proxy.cjs") GITHUB_TOKEN=$GITHUB_TOKEN node "$GITHUB_PROXY" >> "$LOG_DIR/github-proxy.log" 2>&1 & ;;
+        esac
+      fi
+    done
+  done
+fi
