@@ -55,6 +55,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: '首页', link: '/quant/' },
+          { text: '🎮 量化控制台（交互版）', link: '/quant-console/' },
           { text: '我能直接帮你做什么', link: '/quant/capabilities' },
           { text: '量化学习路线', link: '/quant/learning-path' },
           { text: '工具与服务清单', link: '/quant/services' },

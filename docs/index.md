@@ -29,4 +29,8 @@ features:
   - title: 🤖 量化能力中心
     details: 凯的量化工具箱 — 写代码、跑回测、分析策略、从零到实盘的学习体系
     link: /quant/
+  - title: 🎮 量化控制台（交互版）
+    details: 可交互的量化控制面板，发需求、出结果、看图表，一站式搞定
+    link: /quant-console/
+    linkText: 打开控制台 →
 ---

@@ -24,8 +24,19 @@ jobs:
         with:
           node-version: 20
       - uses: actions/configure-pages@v4
+      
+      # 构建 VitePress 博客
       - run: npm ci
       - run: npx vitepress build docs
+      
+      # 构建量化控制台
+      - name: Build Quant Console
+        run: |
+          cd quant-console
+          npm ci
+          npm run build
+          cp -r dist ../docs/.vitepress/dist/quant-console
+      
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
