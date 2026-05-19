@@ -110,6 +110,18 @@ quant-console/
 
 ## 6. 当前进度（每个 PR 完成后更新此处）
 
+### 🚨 计划外紧急修复（已完成）
+
+- [x] **frp token 泄露事件处理**（2026-05-19 晚）
+  - 起因：`quant-console/frpc.toml` 含明文 token 被 commit 到公开 repo
+  - 处置：
+    1. 服务端轮换 frp token（旧值 `kai-quant-tunnel-2026` 已作废）
+    2. Mac frpc 同步新 token，验证隧道通路 OK
+    3. git-filter-repo 清除 `frpc.toml` 所有历史（28→27 commits）
+    4. force push 覆盖远程（`ffafd12 → d865f48`）
+    5. GitHub 搜索旧 token 已 0 结果
+  - 备份：`~/jovi2026-backup/learn-stocks-mirror-20260519-235358.git`（7 天后可删）
+
 ### P0 - 安全与紧急 bug（半天）
 
 - [ ] 移除前端硬编码 token，鉴权下沉到 cors-proxy
