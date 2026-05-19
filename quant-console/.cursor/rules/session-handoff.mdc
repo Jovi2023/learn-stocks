@@ -1,0 +1,34 @@
+---
+description: 会话工作流 - 每次对话的开场与收尾
+alwaysApply: true
+---
+
+# 会话工作流
+
+## 开场（每次新对话）
+
+1. 读 `AGENTS.md` 第 6 节，确认当前进度
+2. 确认本次对话目标在哪一档（P0 / P1 / P2 / P3 / P4）
+3. 如果用户没说目标，**主动列出 next 3 件事让用户选**
+
+## 执行中
+
+- 不要在一个对话里跨档位（不要同时做 P0 + P2）
+- 不要主动扩大范围（用户只要 fix bug A，不要顺手 refactor 其他）
+- 改了 ≥2 个文件就跑一次 `ReadLints`
+- 改完后用 `git status` / `git diff` 自检
+
+## 收尾（每次对话结束前）
+
+必须做的三件事：
+
+1. **更新 `AGENTS.md` 第 6 节**：把完成的 checkbox 勾上
+2. **列出改动清单**：每个文件一行，说明改了什么
+3. **提示用户 commit**：给出建议的 commit message（中文 + semantic 前缀）
+
+## 不要做的事
+
+- 不要不 commit 就开始下一件事
+- 不要 commit 包含 `dist/` 或 secret
+- 不要主动 `git push`，除非用户明确要求
+- 不要 amend 已 push 的 commit

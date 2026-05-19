@@ -1,0 +1,44 @@
+---
+description: 凯的量化控制台 - 核心项目约定
+alwaysApply: true
+---
+
+# 凯的量化控制台 - 项目约定
+
+每个会话开始时，请先读 `AGENTS.md` 了解当前进度。
+
+## 工作风格
+
+- **一个对话 = 一件事 = 一个 PR**：不要在一个会话里堆功能
+- 改代码前先看 `AGENTS.md` 第 6 节的当前进度
+- 改代码后更新 `AGENTS.md` 第 6 节的 checkbox
+
+## 提交规约
+
+```
+feat: 加 Pyodide 沙箱
+fix: 历史按钮无响应
+refactor: 拆 App.vue 成 ChatPanel + 4 个 Panel
+chore: 卸 highlight.js 减小 bundle
+docs: 更新路线图
+```
+
+中文 + semantic 前缀，commit 不打英文。
+
+## 禁止 commit
+
+- `dist/`、`node_modules/`、`*.log`
+- `.env`、`*.env`、`frpc.toml`、任何带 token / secret 的文件
+
+## 禁止引入的依赖
+
+- lodash 全量（用原生或 `lodash.xxx` 子包）
+- moment.js（用 `dayjs` 或 `Intl`）
+- jQuery、第二个图表库（已有 chart.js）、第二个 markdown 库
+
+## 不要做的事（节省精力 + 合规）
+
+- 实盘交易 / 券商对接
+- 收费投资建议
+- 用户登录系统（先 IndexedDB 本地）
+- A 股实时行情接入

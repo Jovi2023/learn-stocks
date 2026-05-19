@@ -1,0 +1,79 @@
+---
+description: Vue 组件风格 - 拆分与可维护性
+globs: **/*.vue
+alwaysApply: false
+---
+
+# Vue 组件风格
+
+## 文件大小上限
+
+- 单个 `.vue` 文件 **不超过 200 行**（含 template + script + style）
+- 超过就拆组件 + 抽 composable
+
+## script setup 语法
+
+```vue
+<script setup>
+import { ref, computed } from 'vue'
+import { useChat } from '@/composables/useChat'
+
+const { messages, loading, sendMessage } = useChat()
+</script>
+```
+
+不要再用 Options API。
+
+## 业务逻辑必须抽到 composable
+
+```js
+// ❌ 不要：把请求/状态逻辑塞 App.vue
+async function callAI(text) { /* 30 行 */ }
+
+// ✅ 要：抽到 src/composables/useChat.js
+// composables/useChat.js
+export function useChat() {
+  const messages = ref([])
+  const loading = ref(false)
+  async function sendMessage(text) { /* ... */ }
+  return { messages, loading, sendMessage }
+}
+```
+
+## 重复逻辑必须抽出
+
+`syncMarketFromSymbol` 和 `syncDataMarket` 是同一逻辑写两遍 →
+抽成 `useMarketDetect(symbolRef)`。
+
+## v-html 必须走 DOMPurify
+
+参考 `security.mdc` 第 2 条。
+
+## 移动端不要 `display: none` 核心功能
+
+```css
+/* ❌ 隐藏 side-panel 等于让手机用户没法用 */
+@media (max-width: 768px) { .side-panel { display: none } }
+
+/* ✅ 改成抽屉 / drawer */
+@media (max-width: 768px) {
+  .side-panel { position: fixed; bottom: 0; transform: translateY(100%); }
+  .side-panel.open { transform: translateY(0); }
+}
+```
+
+## 文本输入框处理中文输入法
+
+```vue
+<textarea
+  v-model="text"
+  @keydown.enter.exact="handleSend"
+/>
+
+<script setup>
+function handleSend(e) {
+  if (e?.isComposing || e?.keyCode === 229) return  // IME 守卫
+  // ...
+}
+</script>
+```

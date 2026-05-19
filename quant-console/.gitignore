@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets - 不可放进仓库
+.env
+*.env
+*.local.env
+frpc.toml
+.openclaw/
+**/github.env
+
+# Cursor 不公开的内容（rules 保留，其余忽略）
+.cursor/agent-cache/
+.cursor/.tmp/

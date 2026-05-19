@@ -1,0 +1,58 @@
+---
+description: 安全红线 - 不可妥协
+alwaysApply: true
+---
+
+# 安全红线
+
+## 1. Token / Secret 永不进前端
+
+```js
+// ❌ 永远不要
+export const API_CONFIG = {
+  token: 'ghp_xxx' // 或 Bearer 'xxx'
+}
+
+// ✅ 鉴权由 proxy / Workers 注入
+export const API_CONFIG = {
+  baseUrl: import.meta.env.DEV ? '' : 'https://api.jovi-trade.cn'
+}
+```
+
+任何 `ghp_`、`Bearer `、`sk-`、`api_key` 字符串出现在 `src/**/*.js` 都是 bug。
+
+## 2. Markdown 渲染必须经 DOMPurify
+
+```js
+// ❌ 危险（marked 默认不转义内嵌 HTML）
+<div v-html="marked.parse(text)" />
+
+// ✅ 必须清洗
+import DOMPurify from 'dompurify'
+function renderMarkdown(text){
+  return DOMPurify.sanitize(marked.parse(text, { breaks: true }))
+}
+```
+
+## 3. CORS 不能在生产保持 `*`
+
+`cors-proxy.cjs` / Workers 在上线前必须把 `Access-Control-Allow-Origin: *`
+改为白名单（自有域名 + localhost）。
+
+## 4. 不写入用户隐私到公开仓库
+
+- 对话默认存 IndexedDB（本地）
+- 用户主动"导出到 Gist" 才上云
+- GitHub Issues 仅限存"演示对话"，不存真实持仓代码
+
+## 5. 任何 `fetch` 必须有超时
+
+```js
+const ctl = new AbortController()
+const timer = setTimeout(() => ctl.abort(), 60_000)
+try {
+  const res = await fetch(url, { signal: ctl.signal })
+} finally {
+  clearTimeout(timer)
+}
+```
