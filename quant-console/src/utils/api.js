@@ -4,7 +4,7 @@
 
 export const API_CONFIG = {
   // Serveo 隧道公网 URL
-  baseUrl: 'http://101.32.186.116:8888',
+  baseUrl: 'https://api.jovi-trade.cn',
   // OpenClaw Gateway auth token
   get token() {
     return '7c1f4adfe52e2f016d2329e9c6304e20a1bb5540b7667349'

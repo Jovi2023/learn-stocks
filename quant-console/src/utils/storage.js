@@ -1,7 +1,7 @@
 // 对话持久化存储 - 通过本地代理保存到 GitHub Issues
 // Token 保存在 Mac 本地，浏览器不直接调 GitHub API
 
-const SAVE_API_URL = 'http://101.32.186.116:8888/api/save-chat'
+const SAVE_API_URL = 'https://api.jovi-trade.cn/api/save-chat'
 
 /**
  * 保存对话到 GitHub Issues
