@@ -124,13 +124,17 @@ quant-console/
 
 ### P0 - 安全与紧急 bug（半天）
 
-- [x] **移除前端硬编码 token，鉴权下沉到 cors-proxy**（2026-05-20）
+- [x] **移除前端硬编码 token，鉴权下沉到 cors-proxy**（2026-05-20，commit `442801e`）
   - 前端 `src/utils/api.js` 删除 `token` 字段和 `Authorization` header
   - `cors-proxy.cjs` 直接读 `~/.openclaw/kai.env`（也支持 `KAI_API_TOKEN` env），转发 Gateway 时主动剥掉浏览器送来的 `authorization` 并注入服务端 token
   - 启动脚本命令行**不再传 token 字面量**（避免 `ps -ef` 泄露）
   - 顺手修了 `start-tunnel.sh` / `keepalive.sh` 里 `$HOME/jovi2026/quant-console/...` 的坏路径，纠正为 `$HOME/jovi2026/learn-stocks/quant-console/...`
-  - **已完成 token 轮换**：`openclaw.json` 的 `gateway.auth.token` 与 `~/.openclaw/kai.env` 同步换成 `openssl rand -hex 24` 生成的新值，旧值 `7c1f4adfe5...` 现在打 gateway 直接 401
+  - **已完成 Gateway token 轮换**：`openclaw.json` 的 `gateway.auth.token` 与 `~/.openclaw/kai.env` 同步换成 `openssl rand -hex 24` 生成的新值，旧值 `7c1f4adfe5...` 现在打 gateway 直接 401
   - 备份：`~/.openclaw/openclaw.json.before-rotate-20260520-102328`、`~/.openclaw/kai.env.before-rotate-20260520-102328`（7 天后可删）
+- [x] **github-proxy 同款鉴权下沉 + GitHub PAT 轮换**（2026-05-20，commit `921d45d`）
+  - `github-proxy.cjs` 启动时从 `~/.openclaw/github.env` 自读 token，命令行不再带 `GITHUB_TOKEN=ghp_xxx`，`ps -ef` 看不到
+  - 旧 classic PAT (`ghp_vZY...`，仓库 `repo` 全权限、永不过期) 已替换为 fine-grained PAT（`github_pat_...`，仅 `Jovi2023/learn-stocks` 的 Issues:write + Metadata:read，90 天到期）
+  - 端到端验证通过：cors-proxy → github-proxy → api.github.com 成功创建并立刻 close 测试 Issue #4
 - [x] **`marked` 接 DOMPurify**（2026-05-20）
   - 新增 `src/utils/markdown.js`：`marked.parse → DOMPurify.sanitize`，并通过 hook 给所有 `<a>` 加 `target="_blank" rel="noopener noreferrer"` 防 reverse tabnabbing
   - `App.vue` 改用新模块，删本地 `renderMarkdown` 函数
@@ -185,17 +189,29 @@ quant-console/
 
 ---
 
+## 6.1 用户侧待办（AI 不能代劳，新会话开场必须先提醒用户）
+
+- [ ] **Delete 旧 classic PAT `quant-console`** —— https://github.com/settings/tokens
+  - 现在 fine-grained PAT 已端到端验证可用（commit `921d45d`），旧 token 可安全删除
+  - 旧 PAT 前缀 `ghp_vZY...`，名字 `quant-console`，权限 `repo`，"Never used"
+  - **不要动** `jovi-trading docker mac`（另一个 PAT，给本地 Docker 服务用的）
+- [ ] **可选：Delete 测试 Issue #4** —— https://github.com/Jovi2023/learn-stocks/issues/4
+  - 2026-05-20 PAT 轮换时为端到端验证临时创建的 Issue，已 close 但仍在 issues 列表
+  - 不删也无害（标题以 `[ci-test]` 开头，已关闭）
+
+---
+
 ## 7. 开会话时的工作流
 
 每个新对话遵循以下节奏：
 
 1. **开场**：用户告诉我"这一轮要做 X"
-2. **我做**：先读本文件 + 路线图，确认目标在第几节
+2. **我做**：先读本文件 + 路线图，**先扫一眼第 6.1 节用户侧待办**——如果未清空就提醒用户
 3. **执行**：动手改代码，按"一个 PR 一件事"
 4. **收尾**：
    - 运行 lint / build 自检
    - 列出本次改动清单
-   - 更新本文件第 6 节的 checkbox
+   - 更新本文件第 6 节的 checkbox（带上 commit hash 方便回溯）
    - 提示用户 commit
 
 ---
