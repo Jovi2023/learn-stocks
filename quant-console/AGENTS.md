@@ -164,9 +164,18 @@ quant-console/
   - `ChatPanel` 内部用 `watch` 监听 `messages.length` / `loading` 自动滚到底，父组件不再持 ref
   - 所有 Vue 组件单文件均 ≤100 行，符合规约
 - [ ] 决定 chart.js / highlight.js：真接上 or 卸掉
-- [ ] 删 `responses.js` 死代码，只保留 `welcomeMsg`
+- [x] **删 `responses.js` 死代码**（2026-05-20）
+  - `welcomeMsg` 内联到 `useChat.js`（13 行常量，全局唯一引用点，独立文件不划算）
+  - 删除 `src/utils/responses.js` 整文件——`backtestReply` / `codeReply` / `dataReply` / `analyzeReply` / `defaultReply` 等 mock 时代的死代码全部清除
+  - 顺手从第 9 节危险操作清单移除"删 responses.js 之前确认所有 import 都已替换"——文件没了，告警 N/A
 - [ ] vite dev proxy + 区分 dev/prod baseUrl
-- [ ] `callKai` 加 AbortController + 取消按钮
+- [x] **`callKai` 加 AbortController + 取消按钮**（2026-05-20）
+  - `callKai(input, { signal })` 接受可选 `AbortSignal`，透传给 `fetch`
+  - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(120_000)])` 合成「用户取消 + 120s 超时」双信号，并 `export cancel()`
+  - 错误分支三态：用户主动取消（`⏹ 已取消生成。`）/ 超时（`⏱ 请求超时…`）/ 其他错误（沿用原文案），靠 `userCtrl.signal.aborted` 区分前两者
+  - `ChatPanel` 发送按钮在 `loading` 时变身红色 ⏹ 停止，单击 emit `cancel`；loading 时按 Enter 早退避免误触
+  - 顺手补齐 AGENTS.md 第 4 节「fetch 必须带 AbortSignal 超时」的规约——之前是欠的
+  - build 通过：145.53 kB / gzip 52.67 kB，无明显增长
 
 ### P2 - 云化与移动化（2 天）
 
@@ -191,13 +200,14 @@ quant-console/
 
 ## 6.1 用户侧待办（AI 不能代劳，新会话开场必须先提醒用户）
 
-- [ ] **Delete 旧 classic PAT `quant-console`** —— https://github.com/settings/tokens
-  - 现在 fine-grained PAT 已端到端验证可用（commit `921d45d`），旧 token 可安全删除
-  - 旧 PAT 前缀 `ghp_vZY...`，名字 `quant-console`，权限 `repo`，"Never used"
-  - **不要动** `jovi-trading docker mac`（另一个 PAT，给本地 Docker 服务用的）
-- [ ] **可选：Delete 测试 Issue #4** —— https://github.com/Jovi2023/learn-stocks/issues/4
-  - 2026-05-20 PAT 轮换时为端到端验证临时创建的 Issue，已 close 但仍在 issues 列表
-  - 不删也无害（标题以 `[ci-test]` 开头，已关闭）
+> 当前无 pending 待办。下次有新增（如 token 轮换、第三方账号设置）再列在此处。
+
+### 已完成
+
+- [x] **Delete 旧 classic PAT `quant-console`**（2026-05-20）
+  - github-proxy 已切到 fine-grained PAT（commit `921d45d`）并端到端验过，旧 classic PAT `ghp_vZY...` 已从 https://github.com/settings/tokens 移除
+- [x] **Delete 测试 Issue #4**（2026-05-20）
+  - 2026-05-20 PAT 轮换时为端到端验证临时创建的 `[ci-test]` Issue，已删除
 
 ---
 
@@ -239,7 +249,6 @@ git push origin main      # 触发 .github/workflows/deploy.yml
 - ❗ 改 `.github/workflows/deploy.yml` → 全站可能 404
 - ❗ 改 `cors-proxy.cjs` 的端口（18888）→ frpc 配置要同步改
 - ❗ 升 Vue 大版本 → 检查 `<script setup>` 兼容性
-- ❗ 删 `responses.js` 之前确认所有 import 都已替换
 
 ---
 

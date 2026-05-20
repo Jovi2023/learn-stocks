@@ -65,6 +65,8 @@ body { background: #0f172a; color: #e2e8f0; }
 .send-btn { padding: 10px 20px; border: none; border-radius: 10px; background: #3b82f6; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
 .send-btn:hover:not(:disabled) { background: #2563eb; }
 .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.send-btn.stop { background: #dc2626; }
+.send-btn.stop:hover:not(:disabled) { background: #b91c1c; }
 
 /* ---------- Side Panels（共用） ---------- */
 .side-panel { width: 360px; overflow-y: auto; padding: 20px; flex-shrink: 0; }

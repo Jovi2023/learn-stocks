@@ -25,8 +25,13 @@
         rows="2"
         @keydown.enter.exact="onEnter"
       ></textarea>
-      <button class="send-btn" :disabled="loading || !inputText.trim()" @click="onSend">
-        {{ loading ? '⏳' : '发送' }}
+      <button
+        class="send-btn"
+        :class="{ stop: loading }"
+        :disabled="!loading && !inputText.trim()"
+        @click="onClick"
+      >
+        {{ loading ? '⏹ 停止' : '发送' }}
       </button>
     </div>
   </div>
@@ -40,7 +45,7 @@ const props = defineProps({
   messages: { type: Array, required: true },
   loading: { type: Boolean, default: false },
 })
-const emit = defineEmits(['send'])
+const emit = defineEmits(['send', 'cancel'])
 
 const inputText = ref('')
 const messagesRef = ref(null)
@@ -59,7 +64,14 @@ function onEnter(e) {
   // 中文输入法选词期间按 Enter 是「确认候选词」，不该当作发送
   if (e && e.isComposing) return
   if (e) e.preventDefault()
+  // loading 时禁用 Enter 触发：避免误触把当前请求停掉
+  if (props.loading) return
   onSend()
+}
+
+function onClick() {
+  if (props.loading) emit('cancel')
+  else onSend()
 }
 
 function onSend() {

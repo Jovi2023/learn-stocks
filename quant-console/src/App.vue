@@ -9,7 +9,7 @@
       @history="loadHistory"
     />
     <div class="main">
-      <ChatPanel :messages="messages" :loading="loading" @send="send" />
+      <ChatPanel :messages="messages" :loading="loading" @send="send" @cancel="cancel" />
       <div class="side-panel">
         <BacktestPanel v-show="activeTab === 'backtest'" :loading="loading" @run="send" />
         <CodePanel v-show="activeTab === 'code'" :loading="loading" @run="send" />
@@ -46,7 +46,7 @@ const tabs = [
   { id: 'analyze', icon: '🧠', label: '分析' },
 ]
 
-const { messages, loading, send } = useChat()
+const { messages, loading, send, cancel } = useChat()
 const {
   savingChat,
   showHistory,

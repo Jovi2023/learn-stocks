@@ -10,9 +10,10 @@ export const API_CONFIG = {
 /**
  * 调用 Kai 处理量化需求
  * @param {string} input - 用户输入的内容
+ * @param {{ signal?: AbortSignal }} [opts] - 可选 AbortSignal（支持用户取消 / 超时）
  * @returns {Promise<{text: string, raw: object}>}
  */
-export async function callKai(input) {
+export async function callKai(input, { signal } = {}) {
   const response = await fetch(`${API_CONFIG.baseUrl}/v1/responses`, {
     method: 'POST',
     headers: {
@@ -22,7 +23,8 @@ export async function callKai(input) {
     body: JSON.stringify({
       model: 'openclaw',
       input: input
-    })
+    }),
+    signal
   })
 
   if (!response.ok) {
