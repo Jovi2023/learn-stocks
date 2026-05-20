@@ -154,10 +154,10 @@
 
 <script setup>
 import { ref, nextTick, computed, onMounted } from 'vue'
-import { marked } from 'marked'
 import { welcomeMsg } from './utils/responses.js'
 import { callKai } from './utils/api.js'
 import { saveChatToGitHub, loadChatHistory } from './utils/storage.js'
+import { renderMarkdown } from './utils/markdown.js'
 
 const activeTab = ref('backtest')
 const inputText = ref('')
@@ -198,10 +198,6 @@ function syncMarketFromSymbol() {
 function syncDataMarket() {
   const s = dataForm.value.symbol
   dataForm.value.market = (s.startsWith('0') || s.startsWith('3') || s.startsWith('6')) ? 'cn' : 'us'
-}
-
-function renderMarkdown(text) {
-  return marked.parse(text, { breaks: true })
 }
 
 function sendMessage(e) {
