@@ -133,7 +133,13 @@ quant-console/
   - 备份：`~/.openclaw/openclaw.json.before-rotate-20260520-102328`、`~/.openclaw/kai.env.before-rotate-20260520-102328`（7 天后可删）
 - [ ] `marked` 接 DOMPurify
 - [ ] 修历史按钮 `loadHistory()` 调用 + 删 `onMounted` 自动拉历史
-- [ ] 修 `.github/workflows/deploy.yml` 第二步路径错误
+- [x] **修 `.github/workflows/deploy.yml` 第二步路径错误**（2026-05-20，误报澄清 + 配套清理）
+  - 评估时的担忧：`cp -r dist 已存在目录` 会嵌套到 `dist/quant-console/dist/`
+  - 实际：vitepress build **不会**把 `docs/quant-console/` 自动拷进 `docs/.vitepress/dist/`（只处理 .md），所以 cp 目标不存在 = 正确的"重命名拷贝"；线上 bundle hash 与本地构建一致，三次 Actions run 全 success
+  - 顺手清理（防未来变成真 bug）：
+    - `git rm -r docs/quant-console/` —— 把手动 commit 进去的 4 个构建产物清掉，CI 是唯一构建源
+    - `git rm quant-console/.github/workflows/deploy.yml` —— 这个文件不在 repo 根 `.github/`，永远不会被 Actions 识别，留着只是混淆
+    - `.gitignore` 加 `docs/quant-console/` 防再次提交
 - [ ] `sendMessage` 加 IME `isComposing` 守卫
 
 ### P1 - 工程化（1 天）
