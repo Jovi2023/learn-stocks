@@ -136,7 +136,10 @@ quant-console/
   - `App.vue` 改用新模块，删本地 `renderMarkdown` 函数
   - bundle +24 kB（gzip +9 kB），可接受
   - 8 项 XSS 测试全过：`<script>` / `onerror=` / `javascript:` URL / `<iframe>` / `<svg/onload>` 全部失活
-- [ ] 修历史按钮 `loadHistory()` 调用 + 删 `onMounted` 自动拉历史
+- [x] **修历史按钮 `loadHistory()` 调用 + 删 `onMounted` 自动拉历史**（2026-05-20）
+  - 历史按钮 `@click` 从 `showHistory = !showHistory` 改为 `loadHistory`，点击触发真正的 API 拉取并显示 modal；关闭走 modal 内 ✕ 按钮 / overlay 点击（原本就支持）
+  - 删 `onMounted` 静默拉历史块——既省一次每页加载的 GitHub API 调用，又移除了 swallow 错误的 `catch(() => {})`（违反 AGENTS.md 第 4 节规约）
+  - 同步删 `onMounted` 的 import
 - [x] **修 `.github/workflows/deploy.yml` 第二步路径错误**（2026-05-20，误报澄清 + 配套清理）
   - 评估时的担忧：`cp -r dist 已存在目录` 会嵌套到 `dist/quant-console/dist/`
   - 实际：vitepress build **不会**把 `docs/quant-console/` 自动拷进 `docs/.vitepress/dist/`（只处理 .md），所以 cp 目标不存在 = 正确的"重命名拷贝"；线上 bundle hash 与本地构建一致，三次 Actions run 全 success
@@ -144,7 +147,8 @@ quant-console/
     - `git rm -r docs/quant-console/` —— 把手动 commit 进去的 4 个构建产物清掉，CI 是唯一构建源
     - `git rm quant-console/.github/workflows/deploy.yml` —— 这个文件不在 repo 根 `.github/`，永远不会被 Actions 识别，留着只是混淆
     - `.gitignore` 加 `docs/quant-console/` 防再次提交
-- [ ] `sendMessage` 加 IME `isComposing` 守卫
+- [x] **`sendMessage` 加 IME `isComposing` 守卫**（2026-05-20）
+  - 中文输入法选词期间按 Enter 是「确认候选词」，不该当作发送；判断 `e.isComposing === true` 时早退
 
 ### P1 - 工程化（1 天）
 

@@ -12,7 +12,7 @@
         <button class="save-btn" @click="saveChat" :disabled="savingChat" title="保存对话到 GitHub">
           {{ savingChat ? '⏳' : '💾' }} 保存
         </button>
-        <button class="history-btn" @click="showHistory = !showHistory" title="历史对话">
+        <button class="history-btn" @click="loadHistory" title="历史对话">
           📋 历史
         </button>
       </div>
@@ -153,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed, onMounted } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { welcomeMsg } from './utils/responses.js'
 import { callKai } from './utils/api.js'
 import { saveChatToGitHub, loadChatHistory } from './utils/storage.js'
@@ -201,6 +201,8 @@ function syncDataMarket() {
 }
 
 function sendMessage(e) {
+  // 中文输入法选词期间按 Enter 是「确认候选词」，不该当作发送
+  if (e && e.isComposing) return
   if (e) e.preventDefault()
   const text = inputText.value.trim()
   if (!text || loading.value) return
@@ -292,15 +294,6 @@ async function loadHistory() {
 function openIssue(url) {
   window.open(url, '_blank')
 }
-
-onMounted(() => {
-  // 页面加载时静默加载历史数量
-  loadChatHistory().then(list => {
-    if (list.length > 0) {
-      historyList.value = list
-    }
-  }).catch(() => {})
-})
 
 function scrollToBottom() {
   nextTick(() => {
