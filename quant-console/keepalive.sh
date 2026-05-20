@@ -34,7 +34,8 @@ check_and_start "frpc" "$FRPC -c \"$FRPC_CONF\" 2>&1 | tee -a \"$FRPC_LOG\"" "$F
 check_and_start "cors-proxy.cjs" "node \"$CORS_PROXY\"" "$LOG_DIR/cors-proxy.log"
 
 if [ -n "$GITHUB_TOKEN" ]; then
-  check_and_start "github-proxy.cjs" "GITHUB_TOKEN=$GITHUB_TOKEN node \"$GITHUB_PROXY\"" "$LOG_DIR/github-proxy.log"
+  # github-proxy 自行从 ~/.openclaw/github.env 读 token，命令行不带敏感参数
+  check_and_start "github-proxy.cjs" "node \"$GITHUB_PROXY\"" "$LOG_DIR/github-proxy.log"
 fi
 
 # 测试隧道是否可用（快速 TCP 连接）

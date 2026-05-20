@@ -58,9 +58,9 @@ ensure_running "frpc" "frpc -c \"$FRPC_CONF\" 2>&1" "$LOG_DIR/frpc.log"
 # 2. CORS 代理（鉴权由 cors-proxy.cjs 自行从 ~/.openclaw/kai.env 读，避免 ps 泄露）
 ensure_running "cors-proxy.cjs" "node \"$CORS_PROXY\" 2>&1" "$LOG_DIR/cors-proxy.log"
 
-# 3. GitHub 代理
+# 3. GitHub 代理（鉴权由 github-proxy.cjs 自行从 ~/.openclaw/github.env 读，避免 ps 泄露）
 if [ -n "$GITHUB_TOKEN" ]; then
-  ensure_running "github-proxy.cjs" "GITHUB_TOKEN=$GITHUB_TOKEN node \"$GITHUB_PROXY\" 2>&1" "$LOG_DIR/github-proxy.log"
+  ensure_running "github-proxy.cjs" "node \"$GITHUB_PROXY\" 2>&1" "$LOG_DIR/github-proxy.log"
 fi
 
 echo ""
@@ -96,7 +96,7 @@ if ! pgrep -f "frpc" > /dev/null 2>&1; then
         echo "[$(date)] $proc 已停止，重新启动..."
         case "$proc" in
           "cors-proxy.cjs") node "$CORS_PROXY" >> "$LOG_DIR/cors-proxy.log" 2>&1 & ;;
-          "github-proxy.cjs") GITHUB_TOKEN=$GITHUB_TOKEN node "$GITHUB_PROXY" >> "$LOG_DIR/github-proxy.log" 2>&1 & ;;
+          "github-proxy.cjs") node "$GITHUB_PROXY" >> "$LOG_DIR/github-proxy.log" 2>&1 & ;;
         esac
       fi
     done

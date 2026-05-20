@@ -3,15 +3,35 @@
 // Token 只存在你的 Mac 上，不暴露到浏览器
 
 const http = require('http')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ''
 const REPO_OWNER = 'Jovi2023'
 const REPO_NAME = 'learn-stocks'
 const PROXY_PORT = 18889
 
+// 优先用 env，缺失则从 ~/.openclaw/github.env 读
+// 避免 `GITHUB_TOKEN=ghp_xxx node ...` 这种命令行写法暴露在 ps 输出里
+function loadGitHubToken() {
+  if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN
+  const envFile = path.join(os.homedir(), '.openclaw', 'github.env')
+  try {
+    const content = fs.readFileSync(envFile, 'utf8')
+    const m = content.match(/^\s*GITHUB_TOKEN\s*=\s*(.+?)\s*$/m)
+    if (m) return m[1].trim()
+  } catch (_) {
+    // 文件不存在 / 不可读，下面统一报错退出
+  }
+  return ''
+}
+
+const GITHUB_TOKEN = loadGitHubToken()
+
 if (!GITHUB_TOKEN) {
-  console.error('❌ 请设置 GITHUB_TOKEN 环境变量')
-  console.error('   export GITHUB_TOKEN=ghp_xxxxxxxxxxxx')
+  console.error('❌ 找不到 GITHUB_TOKEN。请二选一：')
+  console.error('   echo "GITHUB_TOKEN=ghp_xxx" > ~/.openclaw/github.env  &&  chmod 600 ~/.openclaw/github.env')
+  console.error('   或在启动 shell 中  export GITHUB_TOKEN=ghp_xxx')
   process.exit(1)
 }
 
