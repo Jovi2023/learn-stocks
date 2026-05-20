@@ -26,6 +26,7 @@ dist-ssr
 # Secrets - 不可放进仓库
 .env
 *.env
+!.env.production
 *.local.env
 frpc.toml
 .openclaw/
@@ -34,3 +35,7 @@ frpc.toml
 # Cursor 不公开的内容（rules 保留，其余忽略）
 .cursor/agent-cache/
 .cursor/.tmp/
+
+# Cloudflare Workers 本地缓存（wrangler login 状态、d1 镜像等）
+.wrangler/
+workers/.dev.vars

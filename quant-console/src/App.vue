@@ -4,24 +4,38 @@
       :tabs="tabs"
       :active-tab="activeTab"
       :saving-chat="savingChat"
-      @switch-tab="activeTab = $event"
-      @save="onSave"
+      :uploading-chat="uploadingChat"
+      @switch-tab="onSwitchTab"
+      @save="save(messages)"
+      @upload="upload(messages)"
       @history="loadHistory"
     />
     <div class="main">
       <ChatPanel :messages="messages" :loading="loading" @send="send" @cancel="cancel" />
-      <div class="side-panel">
-        <BacktestPanel v-show="activeTab === 'backtest'" :loading="loading" @run="send" />
-        <CodePanel v-show="activeTab === 'code'" :loading="loading" @run="send" />
-        <DataPanel v-show="activeTab === 'data'" :loading="loading" @run="send" />
-        <AnalyzePanel v-show="activeTab === 'analyze'" :loading="loading" @run="send" />
-      </div>
+      <div
+        v-if="drawerOpen"
+        class="drawer-overlay"
+        aria-hidden="true"
+        @click="drawerOpen = false"
+      ></div>
+      <aside :class="['side-panel', { 'drawer-open': drawerOpen }]">
+        <button
+          class="drawer-close"
+          aria-label="关闭工具面板"
+          @click="drawerOpen = false"
+        >✕</button>
+        <BacktestPanel v-show="activeTab === 'backtest'" :loading="loading" @run="onPanelRun" />
+        <CodePanel v-show="activeTab === 'code'" :loading="loading" @run="onPanelRun" />
+        <DataPanel v-show="activeTab === 'data'" :loading="loading" @run="onPanelRun" />
+        <AnalyzePanel v-show="activeTab === 'analyze'" :loading="loading" @run="onPanelRun" />
+      </aside>
     </div>
     <HistoryModal
       v-if="showHistory"
       :loading="loadingHistory"
       :items="historyList"
       @close="closeHistory"
+      @delete="removeFromHistory"
     />
   </div>
 </template>
@@ -39,6 +53,7 @@ import { useChat } from './composables/useChat.js'
 import { useChatStorage } from './composables/useChatStorage.js'
 
 const activeTab = ref('backtest')
+const drawerOpen = ref(false)
 const tabs = [
   { id: 'backtest', icon: '📊', label: '回测' },
   { id: 'code', icon: '💻', label: '写代码' },
@@ -49,30 +64,24 @@ const tabs = [
 const { messages, loading, send, cancel } = useChat()
 const {
   savingChat,
+  uploadingChat,
   showHistory,
   historyList,
   loadingHistory,
-  saveChat,
+  save,
+  upload,
   loadHistory,
+  removeFromHistory,
   closeHistory,
 } = useChatStorage()
 
-async function onSave() {
-  const msgs = messages.value.filter((m) => m.role !== 'system')
-  if (msgs.length <= 1) {
-    messages.value.push({ role: 'bot', content: '⚠️ 还没有可保存的对话内容。' })
-    return
-  }
-  const title = prompt('给这段对话起个标题：', '量化分析 ' + new Date().toLocaleDateString('zh-CN'))
-  if (!title) return
-  try {
-    const result = await saveChat(title, msgs)
-    messages.value.push({
-      role: 'bot',
-      content: `✅ 对话已保存！\n\n📎 [${title}](${result.url})\n🎫 Issue #${result.number}`,
-    })
-  } catch (err) {
-    messages.value.push({ role: 'bot', content: '⚠️ 保存失败：' + err.message })
-  }
+function onSwitchTab(id) {
+  activeTab.value = id
+  drawerOpen.value = true
+}
+
+function onPanelRun(prompt) {
+  send(prompt)
+  drawerOpen.value = false
 }
 </script>

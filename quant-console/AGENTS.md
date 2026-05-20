@@ -163,7 +163,7 @@ quant-console/
   - CSS 抽到 `src/style.css`，`main.js` 引入；保持全局选择器不变（行为零回归）
   - `ChatPanel` 内部用 `watch` 监听 `messages.length` / `loading` 自动滚到底，父组件不再持 ref
   - 所有 Vue 组件单文件均 ≤100 行，符合规约
-- [x] **决定 chart.js / highlight.js：真接上 or 卸掉**（2026-05-20）
+- [x] **决定 chart.js / highlight.js：真接上 or 卸掉**（2026-05-20，commit `58923f4`）
   - **highlight.js**：接上 —— `markdown.js` 接 `marked-highlight` 扩展 + 按需注册 4 门语言（python / javascript / bash / json）+ atom-one-dark 主题；inline code 不变，fenced code block 内 token 着色生效
   - 项目深蓝代码块底色保留（`.msg-body pre code { background: none }` 让 hljs 主题的 `.hljs { background }` 让位），仅借用 hljs 的 token 颜色，视觉与项目风格一致
   - **chart.js**：保留不接 —— 真接需要先定 AI 输出图表数据的 schema（属于 Prompt 工程 + 前端协议设计），归入 P3 差异化那波专门做
@@ -174,7 +174,7 @@ quant-console/
   - `welcomeMsg` 内联到 `useChat.js`（13 行常量，全局唯一引用点，独立文件不划算）
   - 删除 `src/utils/responses.js` 整文件——`backtestReply` / `codeReply` / `dataReply` / `analyzeReply` / `defaultReply` 等 mock 时代的死代码全部清除
   - 顺手从第 9 节危险操作清单移除"删 responses.js 之前确认所有 import 都已替换"——文件没了，告警 N/A
-- [x] **vite dev proxy + 区分 dev/prod baseUrl**（2026-05-20）
+- [x] **vite dev proxy + 区分 dev/prod baseUrl**（2026-05-20，commit `58923f4`）
   - `vite.config.js` 加 `server.proxy`：`/v1` 和 `/api` 都转到 `http://127.0.0.1:18888`（cors-proxy 自己内部分发到 gateway / github-proxy）
   - `api.js` 导出 `API_BASE_URL = import.meta.env.DEV ? '' : 'https://api.jovi-trade.cn'`，`API_CONFIG.baseUrl` 复用
   - `storage.js` 改用 `${API_BASE_URL}/api/save-chat`，不再硬编码公网域名（之前完全漏改）
@@ -190,10 +190,42 @@ quant-console/
 
 ### P2 - 云化与移动化（2 天）
 
-- [ ] `github-proxy.cjs` 改写为 Cloudflare Worker
+- [x] **`github-proxy.cjs` 改写为 Cloudflare Worker**（2026-05-20，已部署验证）
+  - Worker 源码：`quant-console/workers/github-proxy.js`，Module Worker（ESM 风格），1:1 复刻 `github-proxy.cjs` 的 issue body 格式（保证旧 issues 视觉一致）
+  - 与 `.cjs` 版本相比的安全收紧：
+    - **CORS 不再 `*`** —— 按 `ALLOWED_ORIGINS` 白名单回显 origin，未匹配的请求浏览器自然拒收（AGENTS.md 第 3 节红线第 3 条达成）
+    - **payload 校验** —— title ≤200 字符、messages ≤100 条、单条 content ≤50k，避免被滥用灌爆 Issues
+    - GITHUB_TOKEN 走 `wrangler secret put`（CF 边缘加密存储），不在 `wrangler.toml` 里
+  - 部署配置：`quant-console/workers/wrangler.toml`，`vars` 包含 `REPO_OWNER` / `REPO_NAME` / `ALLOWED_ORIGINS`，白名单含 GitHub Pages 域、未来的 `console.jovi-trade.cn`、本地 dev 端口 5173/5174
+  - **workers.dev 路由**：子域 `jovi2023.workers.dev`；`wrangler.toml` 显式 `workers_dev = true`（首次 deploy 失败在子域注册前会导致「无活动路由」+ curl `error code: 1042`，子域注册后必须 redeploy）
+  - **生产 URL**：`https://kai-github-proxy.jovi2023.workers.dev/api/save-chat`
+  - 前端 endpoint 切换：`storage.js` 按 `VITE_GITHUB_PROXY_URL`（`.env.production`）→ fallback `${API_BASE_URL}/api/save-chat`
+  - 端到端验证：curl POST 返回 `200 {"success":true,"url":".../issues/5","number":5}`（测试 Issue #5，用户侧待关闭）
+  - `.gitignore` 加 `.wrangler/` 和 `workers/.dev.vars`
+  - **不动**项：`github-proxy.cjs` / `cors-proxy.cjs` / `start-tunnel.sh` 保留，dev 模式仍走本地链路；Mac 关机后 ☁️ 上传仍可用
 - [ ] 域名 `console.jovi-trade.cn` 指向 Workers
-- [ ] 移动端 side-panel → 底部 Drawer
-- [ ] IndexedDB 替代 GitHub Issues 做对话存档
+- [x] **移动端 side-panel → 底部 Drawer**（2026-05-20）
+  - 桌面端零变化（≥769px 不走 drawer 分支，原 flex 布局 + side-panel:360px 保持）
+  - 移动端 ≤768px：
+    - Header 不再 `display:none` 整段隐藏；`<h1>` 标题文字隐藏（保留 logo），tab/save/history 按钮变 icon only（label 套 `<span class="btn-label">` 由 CSS 隐藏，文案靠 `:title` / `aria-label` 兜底无障碍）
+    - `.side-panel` 改为 `position: fixed; bottom: 0` 底部抽屉，`transform: translateY(100%)` 关闭态、`.drawer-open` 滑出，圆角顶 + 抓手条 + 阴影 + 半透明 overlay
+    - **触发**：点 Header 任一 tab → drawer 滑出（沿用桌面端"点 tab 切右栏"的肌肉记忆）
+    - **关闭**：✕ 按钮 / 点 overlay / 点任一 panel 的"🚀 跑回测"等 action（提交 prompt 同时收起 drawer，让用户立刻看到聊天区）
+  - 顺手把 `onSave` 整段下沉到 `useChatStorage.save(messages)`：包含 prompt 起标题 + filter system msg + 反馈消息 + savingChat loading 态。`App.vue` 从 78 行 → 74 行（保住 ≤100 红线，原 onSave 16 行下沉后腾出空间放 drawer 状态与 handler）
+  - `AppHeader.vue` 每个按钮的文字独立成 `<span class="btn-label">`，桌面照常显示；移动端用 `.btn-label { display: none }` 一键隐藏
+  - bundle: JS 180.93 → 181.49 kB（gzip 65.88 → 66.09，+0.21 kB），CSS 新增 8.96 kB / gzip 2.49 kB（drawer + mobile 共约 60 行 CSS）
+  - 无 lint 错误，build 通过
+- [x] **IndexedDB 替代 GitHub Issues 做对话存档**（2026-05-20）
+  - 双轨方案落地：默认 💾 → IndexedDB；新增 ☁️ 上传按钮可选把当前对话同步到 GitHub Issues（复用现有 `saveChatToGitHub` / github-proxy 链路）。后续 PR 若决定换 Gist endpoint，只动 `storage.js` + github-proxy 一处，前端无感
+  - 新增 `src/utils/localStore.js`：用 `idb-keyval` 极薄封装 IndexedDB CRUD（`saveLocalChat` / `listLocalChats` / `deleteLocalChat`），DB 名 `quant-console` / store `chats`，id 形如 `chat_<ts>_<rand>`，schema `{ id, title, created, messages }`
+  - `useChatStorage` 扩为 5 个 action：`save`（→ 本地）/ `upload`（→ 云）/ `loadHistory`（读本地）/ `removeFromHistory`（删本地）/ `closeHistory`，并暴露 `savingChat` / `uploadingChat` 两个 loading ref
+  - `AppHeader` 在 💾 保存和 📋 历史之间塞了第 7 个按钮 ☁️ 上传（icon-only 在移动端 ≤768px 仍能放下 iPhone 13 Pro 390px 宽度），文案中性"上传"不说 Gist
+  - `HistoryModal` 重写 schema：本地 `{ id, title, created, messages.length }` 渲染；新增 🗑 删除按钮（带 confirm()）+ footer 提示「数据存浏览器本地，换浏览器看不到」；移除"整条点击打开 issue 页"行为（本 PR 暂不做恢复对话功能）
+  - **不迁移历史**：旧的 GitHub Issues 历史留云端，新数据默认进 IndexedDB；用户若想再次访问旧云端历史，可手动在 GitHub repo 里查 label `quant-console` `chat-log` 的 Issues
+  - 顺手删 `storage.js` 里的 `loadChatHistory`（已无人引用），文件从 46 行 → 21 行
+  - 新依赖：`idb-keyval@^6.2.2`（~1kB gzip，路线图明示）
+  - bundle: JS 181.49 → 184.24 kB（gzip 66.09 → 67.18，+1.09 kB），CSS +0.08 kB gzip，符合 idb-keyval + 50 行新业务代码的预算
+  - 无 lint 错误，build 通过
 
 ### P3 - 差异化（核心卖点）
 
@@ -211,7 +243,14 @@ quant-console/
 
 ## 6.1 用户侧待办（AI 不能代劳，新会话开场必须先提醒用户）
 
-> 当前无 pending 待办。下次有新增（如 token 轮换、第三方账号设置）再列在此处。
+### Pending
+
+> 当前无 pending 待办。
+
+### 已完成
+
+- [x] **Delete 测试 Issue #5**（2026-05-20）
+  - Worker 端到端验证 curl 临时创建的 `[ci-test] worker e2e` Issue，部署验证通过后应关闭
 
 ### 已完成
 
@@ -248,9 +287,42 @@ npm run preview  # 预览 dist/（走公网，可不开本地隧道）
 bash start-tunnel.sh      # 启动 frpc + 两个 proxy（cors-proxy:18888、github-proxy:18889）
 bash keepalive.sh         # crontab 每分钟跑一次的守护
 
-# 部署
+# 部署前端
 git push origin main      # 触发 .github/workflows/deploy.yml
 ```
+
+### Cloudflare Worker（github-proxy 云化版）部署
+
+```bash
+cd quant-console/workers
+
+# 0. 首次：装 wrangler（全局或用 npx）
+npm i -g wrangler
+
+# 1. 登陆 Cloudflare（浏览器会跳一下）
+wrangler login
+
+# 2. 注入 GitHub fine-grained PAT 作为 secret
+#    粘贴当前在用的 PAT（仅 Jovi2023/learn-stocks 的 Issues:write + Metadata:read）
+wrangler secret put GITHUB_TOKEN
+
+# 3. 部署
+wrangler deploy
+
+# 4. 端到端验证（替换 <sub> 为你的 workers.dev 子域）
+curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://jovi2023.github.io" \
+  -d '{"title":"[ci-test] worker e2e","messages":[{"role":"user","content":"hi"}]}'
+# 期望：200 + {success: true, url: "...", number: N}
+# 验证完去 GitHub 把这条测试 Issue 关掉
+
+# 5. 拿到 URL 后告诉 AI，会做第二个 commit：
+#    quant-console/.env.production 里写 VITE_GITHUB_PROXY_URL=<url>/api/save-chat
+#    然后 npm run build 验证 bundle 里这个 URL 是否注入正确，再 push 触发部署
+```
+
+> 部署完成、端到端验证完毕 + GitHub Pages 那侧切到 Worker URL 之后，才能停 Mac 上的 github-proxy（改 `start-tunnel.sh` 不再启 18889）。在那之前 dev 与 prod 都依赖本地 github-proxy.cjs 作为 fallback。
 
 ---
 
