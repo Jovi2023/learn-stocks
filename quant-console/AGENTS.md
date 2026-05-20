@@ -34,9 +34,9 @@
 | 框架 | Vue 3 `<script setup>` | 不引入 TypeScript（小项目不值） |
 | 构建 | Vite | `base: '/learn-stocks/quant-console/'` 别动 |
 | 状态 | 暂用 ref / composables | 数据量起来再上 Pinia |
-| Markdown | `marked` + `DOMPurify` | DOMPurify 是安全红线，必须有 |
-| 图表 | `chart.js`（已装，待接入） | 不要再装别的图表库 |
-| 代码高亮 | `highlight.js`（已装，待接入） | 同上 |
+| Markdown | `marked` + `DOMPurify` + `marked-highlight` | DOMPurify 是安全红线，必须有；marked-highlight 是 marked v18+ 接代码高亮的官方扩展 |
+| 图表 | `chart.js`（已装，待接入） | 等 P3 差异化定 AI 图表 schema 后再接，不要再装别的图表库 |
+| 代码高亮 | `highlight.js`（已接入，core + python/javascript/bash/json） | 按需 registerLanguage，要新语言现加；主题 atom-one-dark |
 | 后端代理 | `cors-proxy.cjs` + `github-proxy.cjs` | 计划迁移到 Cloudflare Workers |
 | 部署 | GitHub Pages（前端） + frp 隧道（API） | 部署目标：API 迁 Workers，前端不变 |
 
@@ -163,13 +163,24 @@ quant-console/
   - CSS 抽到 `src/style.css`，`main.js` 引入；保持全局选择器不变（行为零回归）
   - `ChatPanel` 内部用 `watch` 监听 `messages.length` / `loading` 自动滚到底，父组件不再持 ref
   - 所有 Vue 组件单文件均 ≤100 行，符合规约
-- [ ] 决定 chart.js / highlight.js：真接上 or 卸掉
-- [x] **删 `responses.js` 死代码**（2026-05-20）
+- [x] **决定 chart.js / highlight.js：真接上 or 卸掉**（2026-05-20）
+  - **highlight.js**：接上 —— `markdown.js` 接 `marked-highlight` 扩展 + 按需注册 4 门语言（python / javascript / bash / json）+ atom-one-dark 主题；inline code 不变，fenced code block 内 token 着色生效
+  - 项目深蓝代码块底色保留（`.msg-body pre code { background: none }` 让 hljs 主题的 `.hljs { background }` 让位），仅借用 hljs 的 token 颜色，视觉与项目风格一致
+  - **chart.js**：保留不接 —— 真接需要先定 AI 输出图表数据的 schema（属于 Prompt 工程 + 前端协议设计），归入 P3 差异化那波专门做
+  - 新增依赖：`marked-highlight`（marked 官方同套件扩展，约 5kB）
+  - XSS 路径未变：hljs.highlight 输出已 escape 所有 HTML 特殊字符，DOMPurify 默认允许 `<span class="hljs-*">` 且 hook 只动 `<a>`，即便 hljs 出 bug 也有 DOMPurify 兜底
+  - bundle: 145.52 kB → 180.93 kB（gzip 52.67 → 65.88，+13.2kB），符合 hljs core + 4 语言 + 主题 CSS 的预算
+- [x] **删 `responses.js` 死代码**（2026-05-20，commit `fb937cb`）
   - `welcomeMsg` 内联到 `useChat.js`（13 行常量，全局唯一引用点，独立文件不划算）
   - 删除 `src/utils/responses.js` 整文件——`backtestReply` / `codeReply` / `dataReply` / `analyzeReply` / `defaultReply` 等 mock 时代的死代码全部清除
   - 顺手从第 9 节危险操作清单移除"删 responses.js 之前确认所有 import 都已替换"——文件没了，告警 N/A
-- [ ] vite dev proxy + 区分 dev/prod baseUrl
-- [x] **`callKai` 加 AbortController + 取消按钮**（2026-05-20）
+- [x] **vite dev proxy + 区分 dev/prod baseUrl**（2026-05-20）
+  - `vite.config.js` 加 `server.proxy`：`/v1` 和 `/api` 都转到 `http://127.0.0.1:18888`（cors-proxy 自己内部分发到 gateway / github-proxy）
+  - `api.js` 导出 `API_BASE_URL = import.meta.env.DEV ? '' : 'https://api.jovi-trade.cn'`，`API_CONFIG.baseUrl` 复用
+  - `storage.js` 改用 `${API_BASE_URL}/api/save-chat`，不再硬编码公网域名（之前完全漏改）
+  - 收益：`npm run dev` 不再依赖 frpc 隧道，本地直连 cors-proxy，调试更快、不消耗 Gateway 配额
+  - 自检：prod build 产物里 `https://api.jovi-trade.cn` 字符串仍在（minify 后合并为 1 份引用），bundle 145.52 kB / gzip 52.67 kB
+- [x] **`callKai` 加 AbortController + 取消按钮**（2026-05-20，commit `fb937cb`）
   - `callKai(input, { signal })` 接受可选 `AbortSignal`，透传给 `fetch`
   - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(120_000)])` 合成「用户取消 + 120s 超时」双信号，并 `export cancel()`
   - 错误分支三态：用户主动取消（`⏹ 已取消生成。`）/ 超时（`⏱ 请求超时…`）/ 其他错误（沿用原文案），靠 `userCtrl.signal.aborted` 区分前两者
@@ -229,12 +240,12 @@ quant-console/
 ## 8. 常用脚本备忘
 
 ```bash
-npm run dev      # 本地开发，将走 vite proxy → 127.0.0.1:18888
-npm run build    # 输出到 dist/
-npm run preview  # 预览 dist/
+npm run dev      # 本地开发，/v1 + /api 经 vite proxy → 127.0.0.1:18888（前提：先跑 start-tunnel.sh）
+npm run build    # 输出到 dist/，baseUrl 自动切换为公网 https://api.jovi-trade.cn
+npm run preview  # 预览 dist/（走公网，可不开本地隧道）
 
 # 启动本地后端服务
-bash start-tunnel.sh      # 启动 frpc + 两个 proxy
+bash start-tunnel.sh      # 启动 frpc + 两个 proxy（cors-proxy:18888、github-proxy:18889）
 bash keepalive.sh         # crontab 每分钟跑一次的守护
 
 # 部署

@@ -1,7 +1,9 @@
 // 对话持久化存储 - 通过本地代理保存到 GitHub Issues
 // Token 保存在 Mac 本地，浏览器不直接调 GitHub API
 
-const SAVE_API_URL = 'https://api.jovi-trade.cn/api/save-chat'
+import { API_BASE_URL } from './api.js'
+
+const SAVE_API_URL = `${API_BASE_URL}/api/save-chat`
 
 /**
  * 保存对话到 GitHub Issues

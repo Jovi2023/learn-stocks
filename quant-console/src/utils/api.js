@@ -2,8 +2,13 @@
 // 鉴权由 cors-proxy.cjs 在服务端注入，前端绝不持有 token。
 // 见 .cursor/rules/security.mdc 第 1 条。
 
+// dev: 相对路径走 vite proxy → 本地 cors-proxy (127.0.0.1:18888)，不走公网隧道
+// prod: 公网入口（frpc 隧道，最终也指向同一份 cors-proxy）
+// 注意：勿改回相对路径——GitHub Pages 部署在子路径下，相对路径会指错
+export const API_BASE_URL = import.meta.env.DEV ? '' : 'https://api.jovi-trade.cn'
+
 export const API_CONFIG = {
-  baseUrl: 'https://api.jovi-trade.cn',
+  baseUrl: API_BASE_URL,
   agentId: 'main'
 }
 
