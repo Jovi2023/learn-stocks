@@ -152,7 +152,13 @@ quant-console/
 
 ### P1 - 工程化（1 天）
 
-- [ ] 拆 `App.vue` 为多个组件 + composables
+- [x] **拆 `App.vue` 为多个组件 + composables**（2026-05-20）
+  - `App.vue` 411 行 → 78 行（仅顶层布局 + 事件转发，≤100 行红线达成）
+  - 新建组件：`AppHeader`、`ChatPanel`、`HistoryModal`、`panels/{Backtest,Code,Data,Analyze}Panel`
+  - 新建 composables：`useChat`、`useChatStorage`、`useMarketDetect`（A 股 / 美股自动判别 + quick symbols）
+  - CSS 抽到 `src/style.css`，`main.js` 引入；保持全局选择器不变（行为零回归）
+  - `ChatPanel` 内部用 `watch` 监听 `messages.length` / `loading` 自动滚到底，父组件不再持 ref
+  - 所有 Vue 组件单文件均 ≤100 行，符合规约
 - [ ] 决定 chart.js / highlight.js：真接上 or 卸掉
 - [ ] 删 `responses.js` 死代码，只保留 `welcomeMsg`
 - [ ] vite dev proxy + 区分 dev/prod baseUrl
