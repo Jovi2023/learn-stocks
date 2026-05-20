@@ -1,28 +1,21 @@
 // 量化控制台 API 配置
-// Tunnel URL 每次启动 Serveo 会变，需要更新这里
-// 后续可以考虑固定的域名方案（serveo 付费版）
+// 鉴权由 cors-proxy.cjs 在服务端注入，前端绝不持有 token。
+// 见 .cursor/rules/security.mdc 第 1 条。
 
 export const API_CONFIG = {
-  // Serveo 隧道公网 URL
   baseUrl: 'https://api.jovi-trade.cn',
-  // OpenClaw Gateway auth token
-  get token() {
-    return '7c1f4adfe52e2f016d2329e9c6304e20a1bb5540b7667349'
-  },
-  // 默认 agent ID
   agentId: 'main'
 }
 
 /**
  * 调用 Kai 处理量化需求
  * @param {string} input - 用户输入的内容
- * @returns {Promise<{text: string, chartData?: object}>}
+ * @returns {Promise<{text: string, raw: object}>}
  */
 export async function callKai(input) {
   const response = await fetch(`${API_CONFIG.baseUrl}/v1/responses`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${API_CONFIG.token}`,
       'Content-Type': 'application/json',
       'x-openclaw-agent-id': API_CONFIG.agentId
     },
@@ -39,7 +32,6 @@ export async function callKai(input) {
 
   const data = await response.json()
 
-  // 从 Responses API 结构提取文本
   const items = data?.output || []
   let text = ''
   for (const item of items) {

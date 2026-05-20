@@ -4,13 +4,16 @@
 
 FRPC="$HOME/.npm-global/bin/frpc"
 FRPC_CONF="$HOME/.openclaw/frpc.toml"
-CORS_PROXY="$HOME/jovi2026/quant-console/cors-proxy.cjs"
-GITHUB_PROXY="$HOME/jovi2026/quant-console/github-proxy.cjs"
+CORS_PROXY="$HOME/jovi2026/learn-stocks/quant-console/cors-proxy.cjs"
+GITHUB_PROXY="$HOME/jovi2026/learn-stocks/quant-console/github-proxy.cjs"
 LOG_DIR="$HOME/.openclaw/logs"
 mkdir -p "$LOG_DIR"
 
-# 加载 GITHUB_TOKEN
+# 加载 GITHUB_TOKEN（github-proxy 用）
 [ -f "$HOME/.openclaw/github.env" ] && export $(grep -v '^#' "$HOME/.openclaw/github.env" | xargs)
+
+# 加载 KAI_API_TOKEN（cors-proxy 注入鉴权用）
+[ -f "$HOME/.openclaw/kai.env" ] && export $(grep -v '^#' "$HOME/.openclaw/kai.env" | xargs)
 
 check_and_start() {
   local name="$1"
@@ -27,6 +30,7 @@ check_and_start() {
 FRPC_LOG="$LOG_DIR/frpc.log"
 check_and_start "frpc" "$FRPC -c \"$FRPC_CONF\" 2>&1 | tee -a \"$FRPC_LOG\"" "$FRPC_LOG"
 
+# cors-proxy 自行从 ~/.openclaw/kai.env 读 token，命令行不带敏感参数
 check_and_start "cors-proxy.cjs" "node \"$CORS_PROXY\"" "$LOG_DIR/cors-proxy.log"
 
 if [ -n "$GITHUB_TOKEN" ]; then

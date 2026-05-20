@@ -124,7 +124,13 @@ quant-console/
 
 ### P0 - 安全与紧急 bug（半天）
 
-- [ ] 移除前端硬编码 token，鉴权下沉到 cors-proxy
+- [x] **移除前端硬编码 token，鉴权下沉到 cors-proxy**（2026-05-20）
+  - 前端 `src/utils/api.js` 删除 `token` 字段和 `Authorization` header
+  - `cors-proxy.cjs` 直接读 `~/.openclaw/kai.env`（也支持 `KAI_API_TOKEN` env），转发 Gateway 时主动剥掉浏览器送来的 `authorization` 并注入服务端 token
+  - 启动脚本命令行**不再传 token 字面量**（避免 `ps -ef` 泄露）
+  - 顺手修了 `start-tunnel.sh` / `keepalive.sh` 里 `$HOME/jovi2026/quant-console/...` 的坏路径，纠正为 `$HOME/jovi2026/learn-stocks/quant-console/...`
+  - **已完成 token 轮换**：`openclaw.json` 的 `gateway.auth.token` 与 `~/.openclaw/kai.env` 同步换成 `openssl rand -hex 24` 生成的新值，旧值 `7c1f4adfe5...` 现在打 gateway 直接 401
+  - 备份：`~/.openclaw/openclaw.json.before-rotate-20260520-102328`、`~/.openclaw/kai.env.before-rotate-20260520-102328`（7 天后可删）
 - [ ] `marked` 接 DOMPurify
 - [ ] 修历史按钮 `loadHistory()` 调用 + 删 `onMounted` 自动拉历史
 - [ ] 修 `.github/workflows/deploy.yml` 第二步路径错误
