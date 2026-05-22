@@ -33,8 +33,8 @@ jobs:
 
       - name: Prepare Pages Structure
         run: |
-          mkdir -p _site/learn-stocks/quant-console
-          cp -r quant-console/dist/* _site/learn-stocks/quant-console/
+          mkdir -p _site/quant-console
+          cp -r quant-console/dist/* _site/quant-console/
 
       - uses: actions/upload-pages-artifact@v3
         with:
