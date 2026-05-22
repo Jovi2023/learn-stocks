@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# quant-console 前端构建产物：CI 是唯一构建源，不可手动 commit 进 docs/
-docs/quant-console/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

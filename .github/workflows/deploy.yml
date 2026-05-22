@@ -1,5 +1,5 @@
-# GitHub Pages 自动部署
-name: Deploy VitePress to Pages
+# GitHub Pages 自动部署 — 量化控制台
+name: Deploy Quant Console to Pages
 
 on:
   push:
@@ -24,22 +24,21 @@ jobs:
         with:
           node-version: 20
       - uses: actions/configure-pages@v4
-      
-      # 构建 VitePress 博客
-      - run: npm ci
-      - run: npx vitepress build docs
-      
-      # 构建量化控制台
+
       - name: Build Quant Console
         run: |
           cd quant-console
           npm ci
           npm run build
-          cp -r dist ../docs/.vitepress/dist/quant-console
-      
+
+      - name: Prepare Pages Structure
+        run: |
+          mkdir -p _site/learn-stocks/quant-console
+          cp -r quant-console/dist/* _site/learn-stocks/quant-console/
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: _site
 
   deploy:
     runs-on: ubuntu-latest
