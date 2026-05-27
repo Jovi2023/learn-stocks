@@ -1,6 +1,6 @@
 <template>
   <div class="chat-panel">
-    <div ref="messagesRef" class="messages">
+    <div ref="messagesRef" class="messages" @click="handleMessagesClick">
       <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
         <div class="msg-avatar">{{ msg.role === 'user' ? '👤' : '🜁' }}</div>
         <div class="msg-content">
@@ -40,6 +40,9 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue'
 import { renderMarkdown } from '../utils/markdown.js'
+import { useCodeCopy } from '../composables/useCodeCopy.js'
+
+const { handleMessagesClick } = useCodeCopy()
 
 const props = defineProps({
   messages: { type: Array, required: true },

@@ -231,7 +231,11 @@ quant-console/
 
 - [ ] 接 Chart.js，AI 返回结构化数据时画图
 - [ ] 接 Pyodide，代码块"▶ 运行"按钮
-- [ ] 代码块"📋 复制"按钮
+- [x] **代码块"📋 复制"按钮**（2026-05-27）
+  - `markdown.js`：`wrapCodeBlocks` 给每个 `<pre>` 包 `.code-block-wrap` + `.code-copy-btn`（经 DOMPurify 后再进 `v-html`）
+  - `useCodeCopy.js`：`.messages` 事件委托，`navigator.clipboard.writeText` 取 `pre code` 纯文本；成功 2s「已复制」反馈，失败写 `title`
+  - `style.css`：按钮悬停/聚焦显示，右上角绝对定位，`pre` 右侧留空防遮挡
+  - 仅 fenced code block，inline `` ` `` 不加按钮
 
 ### P4 - 起势
 

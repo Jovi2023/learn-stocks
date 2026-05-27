@@ -43,7 +43,16 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 })
 
+function wrapCodeBlocks(html) {
+  // fenced block → <pre><code>…</code></pre>；包一层供复制按钮定位
+  return html.replace(
+    /<pre(\s[^>]*)?>([\s\S]*?)<\/pre>/gi,
+    (_, attrs = '', inner) =>
+      `<div class="code-block-wrap"><button type="button" class="code-copy-btn" aria-label="复制代码" title="复制代码"><span class="code-copy-label" aria-hidden="true">📋</span></button><pre${attrs}>${inner}</pre></div>`,
+  )
+}
+
 export function renderMarkdown(text) {
-  const html = marked.parse(text || '', { breaks: true })
+  const html = wrapCodeBlocks(marked.parse(text || '', { breaks: true }))
   return DOMPurify.sanitize(html)
 }
