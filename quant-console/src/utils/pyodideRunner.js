@@ -31,28 +31,27 @@ export async function runPythonCode(code) {
   const pyodide = await loadPyodideRuntime()
   pyodide.globals.set('_user_code', src)
 
+  pyodide.globals.set('_run_err', null)
+  pyodide.globals.set('_run_out', '')
+
   const runTask = pyodide.runPythonAsync(`
 import sys
 from io import StringIO
 _buf = StringIO()
 _old = sys.stdout
 sys.stdout = _buf
-_err = None
+_run_err = None
 try:
     exec(_user_code, {"__name__": "__main__"})
 except Exception as e:
-    _err = f"{type(e).__name__}: {e}"
+    _run_err = f"{type(e).__name__}: {e}"
 finally:
     sys.stdout = _old
-if _err:
-    _err
-else:
-    _buf.getvalue()
+_run_out = _buf.getvalue()
 `)
 
-  let result
   try {
-    result = await Promise.race([
+    await Promise.race([
       runTask,
       new Promise((_, reject) => {
         setTimeout(() => reject(new Error(`运行超时（${RUN_TIMEOUT_MS / 1000}s）`)), RUN_TIMEOUT_MS)
@@ -62,9 +61,11 @@ else:
     return { error: err?.message || String(err) }
   }
 
-  const text = String(result ?? '')
-  if (text.startsWith('Error:') || text.includes('Exception:') || /^\\w+Error:/.test(text)) {
-    return { error: text }
+  const runErr = pyodide.globals.get('_run_err')
+  const runOut = pyodide.globals.get('_run_out')
+  if (runErr != null && runErr !== undefined) {
+    return { error: String(runErr) }
   }
+  const text = String(runOut ?? '')
   return { output: text || '(无输出)' }
 }
