@@ -10,16 +10,19 @@ function strippedMessages(messages) {
   return messages.value.filter((m) => m.role !== 'system')
 }
 
-async function withTitleAction({ messages, emptyMsg, promptText, loadingRef, run, onSuccess, failPrefix }) {
+function ensureSaveable(messages) {
   const msgs = strippedMessages(messages)
   if (msgs.length <= 1) {
-    messages.value.push({ role: 'bot', content: emptyMsg })
-    return
+    messages.value.push({ role: 'bot', content: '⚠️ 还没有可保存的对话内容。' })
+    return null
   }
-  const title = prompt(promptText, defaultTitle())
-  if (!title) return
+  return msgs
+}
+
+async function runTitleAction({ messages, title, loadingRef, run, onSuccess, failPrefix }) {
   loadingRef.value = true
   try {
+    const msgs = strippedMessages(messages)
     const result = await run(title, msgs)
     messages.value.push({ role: 'bot', content: onSuccess(result, title) })
   } catch (err) {
@@ -36,30 +39,68 @@ export function useChatStorage() {
   const historyList = ref([])
   const loadingHistory = ref(false)
 
+  const titlePrompt = ref({
+    open: false,
+    mode: null,
+    title: '',
+    messagesRef: null,
+  })
+
+  function openTitlePrompt(mode, messages) {
+    if (!ensureSaveable(messages)) return
+    titlePrompt.value = {
+      open: true,
+      mode,
+      title: defaultTitle(),
+      messagesRef: messages,
+    }
+  }
+
+  function closeTitlePrompt() {
+    titlePrompt.value = { open: false, mode: null, title: '', messagesRef: null }
+  }
+
+  function setTitlePromptTitle(title) {
+    titlePrompt.value = { ...titlePrompt.value, title }
+  }
+
+  async function confirmTitlePrompt() {
+    const { open, mode, title, messagesRef } = titlePrompt.value
+    if (!open || !messagesRef) return
+    const trimmed = (title || '').trim()
+    if (!trimmed) return
+
+    closeTitlePrompt()
+
+    if (mode === 'save') {
+      await runTitleAction({
+        messages: messagesRef,
+        title: trimmed,
+        loadingRef: savingChat,
+        run: (t, msgs) => saveLocalChat(t, msgs),
+        onSuccess: () =>
+          '✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。',
+        failPrefix: '⚠️ 保存失败：',
+      })
+    } else if (mode === 'upload') {
+      await runTitleAction({
+        messages: messagesRef,
+        title: trimmed,
+        loadingRef: uploadingChat,
+        run: (t, msgs) => saveChatToGitHub(t, msgs),
+        onSuccess: (result, t) =>
+          `☁️ 已上传到云端备份：\n\n📎 [${t}](${result.url})\n🎫 Issue #${result.number}`,
+        failPrefix: '⚠️ 上传失败：',
+      })
+    }
+  }
+
   function save(messages) {
-    return withTitleAction({
-      messages,
-      emptyMsg: '⚠️ 还没有可保存的对话内容。',
-      promptText: '给这段对话起个标题（保存到本地浏览器）：',
-      loadingRef: savingChat,
-      run: (title, msgs) => saveLocalChat(title, msgs),
-      onSuccess: () =>
-        '✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。',
-      failPrefix: '⚠️ 保存失败：',
-    })
+    openTitlePrompt('save', messages)
   }
 
   function upload(messages) {
-    return withTitleAction({
-      messages,
-      emptyMsg: '⚠️ 还没有可上传的对话内容。',
-      promptText: '云端备份标题（公开存到 GitHub Issues）：',
-      loadingRef: uploadingChat,
-      run: (title, msgs) => saveChatToGitHub(title, msgs),
-      onSuccess: (result, title) =>
-        `☁️ 已上传到云端备份：\n\n📎 [${title}](${result.url})\n🎫 Issue #${result.number}`,
-      failPrefix: '⚠️ 上传失败：',
-    })
+    openTitlePrompt('upload', messages)
   }
 
   async function loadHistory() {
@@ -106,8 +147,12 @@ export function useChatStorage() {
     showHistory,
     historyList,
     loadingHistory,
+    titlePrompt,
     save,
     upload,
+    closeTitlePrompt,
+    setTitlePromptTitle,
+    confirmTitlePrompt,
     loadHistory,
     removeFromHistory,
     closeHistory,

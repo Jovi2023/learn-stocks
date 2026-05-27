@@ -31,6 +31,15 @@
         <FactorPanel v-show="activeTab === 'factor'" :loading="loading" @run="onPanelRun" />
       </aside>
     </div>
+    <TitlePromptModal
+      v-if="titlePrompt.open"
+      :mode="titlePrompt.mode"
+      :title="titlePrompt.title"
+      :busy="savingChat || uploadingChat"
+      @update:title="setTitlePromptTitle"
+      @close="closeTitlePrompt"
+      @confirm="confirmTitlePrompt"
+    />
     <HistoryModal
       v-if="showHistory"
       :loading="loadingHistory"
@@ -47,6 +56,7 @@ import { ref } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import ChatPanel from './components/ChatPanel.vue'
 import HistoryModal from './components/HistoryModal.vue'
+import TitlePromptModal from './components/TitlePromptModal.vue'
 import BacktestPanel from './components/panels/BacktestPanel.vue'
 import CodePanel from './components/panels/CodePanel.vue'
 import DataPanel from './components/panels/DataPanel.vue'
@@ -79,6 +89,10 @@ const {
   removeFromHistory,
   closeHistory,
   restoreFromHistory,
+  titlePrompt,
+  closeTitlePrompt,
+  setTitlePromptTitle,
+  confirmTitlePrompt,
 } = useChatStorage()
 
 function onSwitchTab(id) {
@@ -88,8 +102,12 @@ function onSwitchTab(id) {
 
 useKeyboardShortcuts({
   onSwitchTab,
-  onEscape: () => (showHistory.value ? closeHistory() : (drawerOpen.value = false)),
-  isOverlayOpen: () => showHistory.value,
+  onEscape: () => {
+    if (titlePrompt.value.open) closeTitlePrompt()
+    else if (showHistory.value) closeHistory()
+    else drawerOpen.value = false
+  },
+  isOverlayOpen: () => showHistory.value || titlePrompt.value.open,
 })
 
 function onPanelRun(prompt) {
