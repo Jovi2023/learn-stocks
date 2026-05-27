@@ -43,12 +43,24 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 })
 
+function isPythonBlock(inner, attrs) {
+  const hay = `${attrs} ${inner}`
+  return /language-python/i.test(hay)
+}
+
+function codeBlockToolbar(inner, attrs) {
+  const run = isPythonBlock(inner, attrs)
+    ? '<button type="button" class="code-run-btn" aria-label="运行 Python" title="运行 Python"><span class="code-run-label" aria-hidden="true">▶</span></button>'
+    : ''
+  const copy = '<button type="button" class="code-copy-btn" aria-label="复制代码" title="复制代码"><span class="code-copy-label" aria-hidden="true">📋</span></button>'
+  return `<div class="code-block-toolbar">${run}${copy}</div>`
+}
+
 function wrapCodeBlocks(html) {
-  // fenced block → <pre><code>…</code></pre>；包一层供复制按钮定位
   return html.replace(
     /<pre(\s[^>]*)?>([\s\S]*?)<\/pre>/gi,
     (_, attrs = '', inner) =>
-      `<div class="code-block-wrap"><button type="button" class="code-copy-btn" aria-label="复制代码" title="复制代码"><span class="code-copy-label" aria-hidden="true">📋</span></button><pre${attrs}>${inner}</pre></div>`,
+      `<div class="code-block-wrap">${codeBlockToolbar(inner, attrs)}<pre${attrs}>${inner}</pre><pre class="code-run-output" hidden></pre></div>`,
   )
 }
 

@@ -46,11 +46,20 @@ body { background: #0f172a; color: #e2e8f0; }
 .msg-body strong { color: #facc15; }
 .msg-body code { background: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; }
 .msg-body .code-block-wrap { position: relative; margin: 8px 0; }
-.msg-body .code-copy-btn {
+.msg-body .code-block-toolbar {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 1;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.msg-body .code-block-wrap:hover .code-block-toolbar,
+.msg-body .code-block-toolbar:focus-within { opacity: 1; }
+.msg-body .code-run-btn,
+.msg-body .code-copy-btn {
   padding: 4px 8px;
   border: 1px solid #334155;
   border-radius: 6px;
@@ -59,15 +68,25 @@ body { background: #0f172a; color: #e2e8f0; }
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.msg-body .code-block-wrap:hover .code-copy-btn,
-.msg-body .code-copy-btn:focus-visible,
-.msg-body .code-copy-btn.copied { opacity: 1; }
+.msg-body .code-run-btn:hover:not(:disabled),
 .msg-body .code-copy-btn:hover { background: #334155; color: #e2e8f0; border-color: #3b82f6; }
+.msg-body .code-run-btn:disabled { opacity: 0.6; cursor: wait; }
 .msg-body .code-copy-btn.copied { color: #4ade80; border-color: #4ade80; }
-.msg-body pre { background: #0f172a; border-radius: 8px; padding: 12px 52px 12px 12px; overflow-x: auto; margin: 0; border: 1px solid #334155; }
+.msg-body pre:not(.code-run-output) { background: #0f172a; border-radius: 8px; padding: 12px 72px 12px 12px; overflow-x: auto; margin: 0; border: 1px solid #334155; }
+.msg-body pre.code-run-output {
+  margin-top: 0;
+  padding: 10px 12px;
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-body pre.code-run-output.code-run-error { color: #fca5a5; }
 .msg-body pre code { background: none; padding: 0; }
 .msg-body table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
 .msg-body th, .msg-body td { border: 1px solid #334155; padding: 6px 10px; text-align: left; }

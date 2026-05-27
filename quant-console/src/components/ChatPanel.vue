@@ -41,8 +41,18 @@
 import { ref, nextTick, watch } from 'vue'
 import ChatMessageBody from './ChatMessageBody.vue'
 import { useCodeCopy } from '../composables/useCodeCopy.js'
+import { usePyodideRun } from '../composables/usePyodideRun.js'
 
-const { handleMessagesClick } = useCodeCopy()
+const { handleMessagesClick: handleCopyClick } = useCodeCopy()
+const { handleRunClick } = usePyodideRun()
+
+function handleMessagesClick(e) {
+  if (e.target.closest?.('.code-run-btn')) {
+    handleRunClick(e)
+    return
+  }
+  handleCopyClick(e)
+}
 
 const props = defineProps({
   messages: { type: Array, required: true },

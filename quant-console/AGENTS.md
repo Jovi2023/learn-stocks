@@ -240,7 +240,18 @@ quant-console/
   - **Prompt**：`CHART_API_PREFIX` 自动拼进每次 API 请求（不进聊天记录）；`CHART_PROMPT_HINT` 可进 OpenClaw 系统提示
   - **兼容**：整段裸 JSON（合法时）当图表；`[embed …]` 替换为提示文案
   - 校验失败则原样当 markdown 代码块展示，不崩整条消息
-- [ ] 接 Pyodide，代码块"▶ 运行"按钮
+
+  ### 🆕 图表协议补充规范（2026-06-18）
+  - **禁止 `[embed ...]`** 用于图表——只用 ` ```chart `
+  - **datasets[].data 必须完整**，与 `labels` 等长——不能省略、不能截断
+  - 示例：
+    ```chart
+    {"type":"line","title":"AAPL回测净值","labels":["2024-01","2024-02","2024-03"],"datasets":[{"label":"策略","data":[1,1.05,1.08]}]}
+    ```
+- [x] **接 Pyodide，代码块"▶ 运行"按钮**（2026-05-27，C3）
+  - `language-python` 代码块显示 ▶（与 📋 并列）；首次点击从 jsDelivr 懒加载 Pyodide 0.26.4，不打进 bundle
+  - `pyodideRunner.js`：stdout 捕获、`exec` 跑用户代码、30s 超时、32k 字符上限
+  - 输出在代码块下方 `.code-run-output`；错误红色显示
 - [x] **代码块"📋 复制"按钮**（2026-05-27）
   - `markdown.js`：`wrapCodeBlocks` 给每个 `<pre>` 包 `.code-block-wrap` + `.code-copy-btn`（经 DOMPurify 后再进 `v-html`）
   - `useCodeCopy.js`：`.messages` 事件委托，`navigator.clipboard.writeText` 取 `pre code` 纯文本；成功 2s「已复制」反馈，失败写 `title`
