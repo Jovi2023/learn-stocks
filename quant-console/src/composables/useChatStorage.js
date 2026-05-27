@@ -6,40 +6,8 @@ function defaultTitle() {
   return '量化分析 ' + new Date().toLocaleDateString('zh-CN')
 }
 
-function strippedMessages(messages) {
-  const list = messages?.value ?? messages
-  if (!Array.isArray(list)) return []
-  return list.filter((m) => m.role !== 'system')
-}
-
-function pushBotMessage(messages, content) {
-  const ref = messages?.value !== undefined ? messages : null
-  if (ref) ref.value.push({ role: 'bot', content })
-}
-
-function ensureSaveable(messages) {
-  const msgs = strippedMessages(messages)
-  if (msgs.length <= 1) {
-    pushBotMessage(messages, '⚠️ 还没有可保存的对话内容。')
-    return null
-  }
-  return msgs
-}
-
-async function runTitleAction({ messages, title, loadingRef, run, onSuccess, failPrefix }) {
-  loadingRef.value = true
-  try {
-    const msgs = strippedMessages(messages)
-    const result = await run(title, msgs)
-    pushBotMessage(messages, onSuccess(result, title))
-  } catch (err) {
-    pushBotMessage(messages, failPrefix + err.message)
-  } finally {
-    loadingRef.value = false
-  }
-}
-
-export function useChatStorage() {
+/** @param {import('vue').Ref<Array<{role:string,content:string}>>} chatMessages */
+export function useChatStorage(chatMessages) {
   const savingChat = ref(false)
   const uploadingChat = ref(false)
   const showHistory = ref(false)
@@ -50,21 +18,48 @@ export function useChatStorage() {
     open: false,
     mode: null,
     title: '',
-    messagesRef: null,
   })
 
-  function openTitlePrompt(mode, messages) {
-    if (!ensureSaveable(messages)) return
-    titlePrompt.value = {
-      open: true,
-      mode,
-      title: defaultTitle(),
-      messagesRef: messages,
+  function strippedMessages() {
+    const list = chatMessages.value
+    if (!Array.isArray(list)) return []
+    return list.filter((m) => m.role !== 'system')
+  }
+
+  function pushBotMessage(content) {
+    if (!Array.isArray(chatMessages.value)) return
+    chatMessages.value.push({ role: 'bot', content })
+  }
+
+  function ensureSaveable() {
+    const msgs = strippedMessages()
+    if (msgs.length <= 1) {
+      pushBotMessage('⚠️ 还没有可保存的对话内容。')
+      return false
+    }
+    return true
+  }
+
+  async function runTitleAction({ title, loadingRef, run, onSuccess, failPrefix }) {
+    loadingRef.value = true
+    try {
+      const msgs = strippedMessages()
+      const result = await run(title, msgs)
+      pushBotMessage(onSuccess(result, title))
+    } catch (err) {
+      pushBotMessage(failPrefix + err.message)
+    } finally {
+      loadingRef.value = false
     }
   }
 
+  function openTitlePrompt(mode) {
+    if (!ensureSaveable()) return
+    titlePrompt.value = { open: true, mode, title: defaultTitle() }
+  }
+
   function closeTitlePrompt() {
-    titlePrompt.value = { open: false, mode: null, title: '', messagesRef: null }
+    titlePrompt.value = { open: false, mode: null, title: '' }
   }
 
   function setTitlePromptTitle(title) {
@@ -72,16 +67,16 @@ export function useChatStorage() {
   }
 
   async function confirmTitlePrompt() {
-    const { open, mode, title, messagesRef } = titlePrompt.value
-    if (!open || !messagesRef) return
+    const { open, mode, title } = titlePrompt.value
+    if (!open) return
     const trimmed = (title || '').trim()
     if (!trimmed) return
 
+    const modeCopy = mode
     closeTitlePrompt()
 
-    if (mode === 'save') {
+    if (modeCopy === 'save') {
       await runTitleAction({
-        messages: messagesRef,
         title: trimmed,
         loadingRef: savingChat,
         run: (t, msgs) => saveLocalChat(t, msgs),
@@ -89,9 +84,8 @@ export function useChatStorage() {
           '✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。',
         failPrefix: '⚠️ 保存失败：',
       })
-    } else if (mode === 'upload') {
+    } else if (modeCopy === 'upload') {
       await runTitleAction({
-        messages: messagesRef,
         title: trimmed,
         loadingRef: uploadingChat,
         run: (t, msgs) => saveChatToGitHub(t, msgs),
@@ -102,12 +96,12 @@ export function useChatStorage() {
     }
   }
 
-  function save(messages) {
-    openTitlePrompt('save', messages)
+  function save() {
+    openTitlePrompt('save')
   }
 
-  function upload(messages) {
-    openTitlePrompt('upload', messages)
+  function upload() {
+    openTitlePrompt('upload')
   }
 
   async function loadHistory() {
@@ -132,15 +126,15 @@ export function useChatStorage() {
     showHistory.value = false
   }
 
-  async function restoreFromHistory(id, { messages, restore, loading }) {
+  async function restoreFromHistory(id, { restore, loading }) {
     const chat = await getLocalChat(id)
     if (!chat?.messages?.length) return
 
-    const hasUserMsg = messages.value.some((m) => m.role === 'user')
+    const hasUserMsg = chatMessages.value.some((m) => m.role === 'user')
     if (hasUserMsg && !confirm(`恢复「${chat.title}」会替换当前对话，继续？`)) return
 
     if (loading.value) {
-      pushBotMessage(messages, '⚠️ 等 AI 回复完再恢复历史。')
+      pushBotMessage('⚠️ 等 AI 回复完再恢复历史。')
       return
     }
 

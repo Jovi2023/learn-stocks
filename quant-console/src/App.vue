@@ -6,8 +6,8 @@
       :saving-chat="savingChat"
       :uploading-chat="uploadingChat"
       @switch-tab="onSwitchTab"
-      @save="onSave"
-      @upload="onUpload"
+      @save="save"
+      @upload="upload"
       @history="loadHistory"
     />
     <div class="main">
@@ -93,19 +93,11 @@ const {
   closeTitlePrompt,
   setTitlePromptTitle,
   confirmTitlePrompt,
-} = useChatStorage()
+} = useChatStorage(messages)
 
 function onSwitchTab(id) {
   activeTab.value = id
   drawerOpen.value = true
-}
-
-// 须在 script 里调用：模板传 save(messages) 会解包 ref，useChatStorage 需要 .value
-function onSave() {
-  save(messages)
-}
-function onUpload() {
-  upload(messages)
 }
 
 useKeyboardShortcuts({
@@ -124,6 +116,6 @@ function onPanelRun(prompt) {
 }
 
 function onRestoreHistory(id) {
-  restoreFromHistory(id, { messages, restore, loading })
+  restoreFromHistory(id, { restore, loading })
 }
 </script>
