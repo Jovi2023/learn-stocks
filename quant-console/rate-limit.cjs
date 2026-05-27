@@ -45,7 +45,7 @@ function clientIp(req) {
   return req.socket?.remoteAddress || 'unknown'
 }
 
-function rateLimitJson(retryAfterSec) {
+function rateLimitJson() {
   return JSON.stringify({
     error: {
       message: '请求过于频繁，请稍后再试',

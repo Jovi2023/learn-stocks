@@ -1,6 +1,8 @@
 <template>
   <div class="msg-body">
     <template v-for="(part, j) in parts" :key="j">
+      <!-- markdown 经 DOMPurify 清洗后再 v-html，见 utils/markdown.js -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="part.type === 'md'" v-html="renderMarkdown(part.text)"></div>
       <KaiChart v-else :spec="part.spec" />
     </template>

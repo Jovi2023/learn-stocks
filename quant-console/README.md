@@ -29,6 +29,14 @@ bash start-tunnel.sh
 npm run dev
 ```
 
+## 代码检查
+
+```bash
+npm run lint        # ESLint
+npm run lint:fix    # ESLint 自动修复
+npm run format      # Prettier 格式化
+```
+
 开发模式不依赖公网 API，也不消耗 Gateway 配额。
 
 ## 生产部署

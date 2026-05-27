@@ -266,7 +266,10 @@ quant-console/
 
 ### P4 - 起势
 
-- [ ] ESLint + Prettier
+- [x] **ESLint + Prettier**（2026-05-27）
+  - `eslint.config.js` flat config：`eslint-plugin-vue` + `@eslint/js`；`*.cjs` 单独 commonjs 规则
+  - `prettier.config.js`：无分号、单引号、printWidth 100；与现有代码风格一致
+  - 脚本：`npm run lint` / `lint:fix` / `format`；`ChatMessageBody.vue` 的 `v-html` 有 DOMPurify 说明 + eslint-disable
 - [ ] 录 30s 演示视频
 - [ ] 提交 ProductHunt
 
