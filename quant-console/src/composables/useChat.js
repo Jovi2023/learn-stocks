@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { callKai } from '../utils/api.js'
+import { formatChatError } from '../utils/chatError.js'
 
 // AI 接口超时上限。Kai 偶尔慢但 2 分钟没回基本可以判死了，
 // 避免 fetch 挂在那回收不掉。
@@ -37,15 +38,10 @@ export function useChat() {
     } catch (err) {
       if (userCtrl.signal.aborted) {
         messages.value.push({ role: 'bot', content: '⏹ 已取消生成。' })
-      } else if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
-        messages.value.push({
-          role: 'bot',
-          content: `⏱ 请求超时（${REQUEST_TIMEOUT_MS / 1000}s 没等到响应）——稍后再试？`,
-        })
       } else {
         messages.value.push({
           role: 'bot',
-          content: '⚠️ 请求出错：' + err.message + '\n\n> 试试重新发送？',
+          content: formatChatError(err, { timeoutSec: REQUEST_TIMEOUT_MS / 1000 }),
         })
       }
     } finally {

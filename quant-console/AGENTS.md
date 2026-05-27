@@ -366,6 +366,10 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 - [x] **修复 A 股检测正则** — `detectMarket` 改为 `/^\d{6}$/`，不再把 `NOTHING` 等误判为 A 股
 - [x] **处理 untracked 评估文档** — 决策：保留在仓库外（`~/jovi2026/quant-console-评估与路线图.md`）作 2026-05-19 历史归档；进度维护以本 AGENTS.md 为准，不纳入 git
 
+### 审计 P2/P3 小修（2026-05-27）
+
+- [x] **离线/断连提示**（审计 #10）— `chatError.js` + `useChat`：`Failed to fetch` / `navigator.onLine` / 401 / 5xx 分场景文案，替代笼统 `err.message`
+
 ### 审计后推荐优先级
 
 | 优先级 | 任务 | 问题 | 预估 |
@@ -377,9 +381,9 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 | ~~🟡 P1~~ | ~~重构 useChatStorage 重复逻辑~~ | ~~#6~~ | ✅ 已完成 |
 | ~~🟡 P1~~ | ~~修复 A 股检测正则~~ | ~~#7~~ | ✅ 已完成 |
 | ~~🟡 P1~~ | ~~处理 untracked 评估文档~~ | ~~#4~~ | ✅ 已完成（保留仓库外归档） |
-| 🟢 P2 | 加 rate limit | #8 | 1h |
+| ~~🟢 P2~~ | ~~加 rate limit~~ | ~~#8~~ | 待做 |
 | 🟢 P2 | 键盘快捷键 | #9 | 1h |
-| 🟢 P3 | 离线/断连提示 | #10 | 30min |
+| ~~🟢 P3~~ | ~~离线/断连提示~~ | ~~#10~~ | ✅ 已完成 |
 
 ---
 
