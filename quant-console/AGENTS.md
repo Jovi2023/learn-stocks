@@ -182,7 +182,7 @@ quant-console/
   - 自检：prod build 产物里 `https://api.jovi-trade.cn` 字符串仍在（minify 后合并为 1 份引用），bundle 145.52 kB / gzip 52.67 kB
 - [x] **`callKai` 加 AbortController + 取消按钮**（2026-05-20，commit `fb937cb`）
   - `callKai(input, { signal })` 接受可选 `AbortSignal`，透传给 `fetch`
-  - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(300_000)])` 合成「用户取消 + 300s 超时」双信号，并 `export cancel()`
+  - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(900_000)])` 合成「用户取消 + 900s（15min）超时」双信号，并 `export cancel()`
   - 错误分支三态：用户主动取消（`⏹ 已取消生成。`）/ 超时（`⏱ 请求超时…`）/ 其他错误（沿用原文案），靠 `userCtrl.signal.aborted` 区分前两者
   - `ChatPanel` 发送按钮在 `loading` 时变身红色 ⏹ 停止，单击 emit `cancel`；loading 时按 Enter 早退避免误触
   - 顺手补齐 AGENTS.md 第 4 节「fetch 必须带 AbortSignal 超时」的规约——之前是欠的

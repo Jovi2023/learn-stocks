@@ -4,8 +4,8 @@ import { formatChatError } from '../utils/chatError.js'
 import { CHART_API_PREFIX } from '../utils/chartSpec.js'
 import { FACTOR_API_PREFIX, isFactorTask } from '../utils/factorPrompt.js'
 
-// AI 接口超时上限。因子工程等长任务常需 2–5 分钟；5 分钟无回再判死。
-const REQUEST_TIMEOUT_MS = 300_000
+// AI 接口超时上限。长回测/因子任务可达 10+ 分钟；15 分钟无回再判死。
+const REQUEST_TIMEOUT_MS = 900_000
 
 const welcomeMsg = [
   '早上好 👋 我是 **凯**，你的量化助手。',

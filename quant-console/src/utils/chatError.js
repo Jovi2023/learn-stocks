@@ -1,6 +1,6 @@
 // 把 fetch / 网关错误翻译成用户能操作的提示（见 AGENTS 审计 #10）
 
-export function formatChatError(err, { timeoutSec = 300 } = {}) {
+export function formatChatError(err, { timeoutSec = 900 } = {}) {
   const msg = err?.message || String(err)
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {

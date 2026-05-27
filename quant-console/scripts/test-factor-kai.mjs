@@ -21,7 +21,7 @@ const form = {
 const userPrompt = buildFactorPrompt(form)
 const input = `${CHART_API_PREFIX}\n${FACTOR_API_PREFIX}\n\n${userPrompt}`
 
-const TIMEOUT_MS = Number(process.env.KAI_TEST_TIMEOUT_MS) || 300_000
+const TIMEOUT_MS = Number(process.env.KAI_TEST_TIMEOUT_MS) || 900_000
 
 process.stdout.write('→ POST http://127.0.0.1:18888/v1/responses (因子工程 smoke test)…\n')
 
