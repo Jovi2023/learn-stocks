@@ -74,7 +74,7 @@ echo "    HTTPS API:   https://api.jovi-trade.cn"
 echo "    保存对话:    https://api.jovi-trade.cn/api/save-chat"
 echo ""
 echo "  控制台页面："
-echo "    https://jovi2023.github.io/learn-stocks/quant-console/"
+echo "    https://console.jovi-trade.cn/"
 echo ""
 echo "========================================"
 

@@ -2,7 +2,7 @@
 
 对话优先的 AI 量化助手前端。主界面是对话框，右侧提供回测 / 写代码 / 查数据 / 分析四个工具面板。
 
-**线上地址**：https://jovi2023.github.io/learn-stocks/quant-console/
+**线上地址**：https://console.jovi-trade.cn/（GitHub Pages 自定义域名；旧路径 `/learn-stocks/quant-console/` 已废弃）
 
 ## 功能
 

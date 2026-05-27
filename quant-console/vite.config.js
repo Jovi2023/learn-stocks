@@ -8,7 +8,8 @@ const DEV_PROXY_TARGET = 'http://127.0.0.1:18888'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/learn-stocks/quant-console/',
+  // 生产：console.jovi-trade.cn 根路径；GitHub Pages 自定义域名指向 dist 根目录
+  base: '/',
   server: {
     proxy: {
       '/v1': { target: DEV_PROXY_TARGET, changeOrigin: true },

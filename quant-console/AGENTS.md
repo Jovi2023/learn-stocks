@@ -32,7 +32,7 @@
 | 维度 | 选型 | 说明 |
 |---|---|---|
 | 框架 | Vue 3 `<script setup>` | 不引入 TypeScript（小项目不值） |
-| 构建 | Vite | `base: '/learn-stocks/quant-console/'` 别动 |
+| 构建 | Vite | `base: '/'`（绑定 `console.jovi-trade.cn` 根路径；`public/CNAME` 供 Pages 用） |
 | 状态 | 暂用 ref / composables | 数据量起来再上 Pinia |
 | Markdown | `marked` + `DOMPurify` + `marked-highlight` | DOMPurify 是安全红线，必须有；marked-highlight 是 marked v18+ 接代码高亮的官方扩展 |
 | 图表 | `chart.js`（已装，待接入） | 等 P3 差异化定 AI 图表 schema 后再接，不要再装别的图表库 |
@@ -203,7 +203,11 @@ quant-console/
   - 端到端验证：curl POST 返回 `200 {"success":true,"url":".../issues/5","number":5}`（测试 Issue #5，用户侧待关闭）
   - `.gitignore` 加 `.wrangler/` 和 `workers/.dev.vars`
   - **不动**项：`github-proxy.cjs` / `cors-proxy.cjs` / `start-tunnel.sh` 保留，dev 模式仍走本地链路；Mac 关机后 ☁️ 上传仍可用
-- [ ] 域名 `console.jovi-trade.cn` 指向 Workers
+- [x] **域名 `console.jovi-trade.cn` 指向前端根路径**（2026-05-27，方案 B）
+  - `vite.config.js`：`base: '/'`；`public/CNAME` → `console.jovi-trade.cn`
+  - `deploy.yml`：构建产物部署到 Pages 根目录（不再嵌套 `_site/quant-console/`）
+  - CORS / Worker 白名单已含 `https://console.jovi-trade.cn`（此前已预留）
+  - **用户侧待办（DNS）**：Cloudflare `console` CNAME → GitHub Pages；仓库 Settings → Pages → Custom domain 填 `console.jovi-trade.cn`；生效后旧 URL `jovi2023.github.io/learn-stocks/quant-console/` 不再可用
 - [x] **移动端 side-panel → 底部 Drawer**（2026-05-20）
   - 桌面端零变化（≥769px 不走 drawer 分支，原 flex 布局 + side-panel:360px 保持）
   - 移动端 ≤768px：
@@ -270,7 +274,10 @@ quant-console/
 
 ### Pending
 
-> 当前无 pending 待办。
+- [ ] **绑定 `console.jovi-trade.cn`（方案 B 收尾）**
+  1. Cloudflare DNS：`console` → CNAME → `jovi2023.github.io`（或 GitHub Pages 提示的目标）
+  2. GitHub repo `learn-stocks` → Settings → Pages → Custom domain → `console.jovi-trade.cn`
+  3. 等 DNS + HTTPS 生效后访问 https://console.jovi-trade.cn/ 验证（需 Mac `start-tunnel.sh` 才能对话）
 
 ### 已完成
 
@@ -412,7 +419,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 
 ## 9. 危险操作清单（做之前先想想）
 
-- ❗ 改 `vite.config.js` 的 `base` → 部署路径会错
+- ❗ 改 `vite.config.js` 的 `base` → 须与 Pages 发布根路径一致（当前为 `/` + 自定义域名）
 - ❗ 改 `.github/workflows/deploy.yml` → 全站可能 404
 - ❗ 改 `cors-proxy.cjs` 的端口（18888）→ frpc 配置要同步改
 - ❗ 升 Vue 大版本 → 检查 `<script setup>` 兼容性
