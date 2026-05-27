@@ -10,6 +10,25 @@ function strippedMessages(messages) {
   return messages.value.filter((m) => m.role !== 'system')
 }
 
+async function withTitleAction({ messages, emptyMsg, promptText, loadingRef, run, onSuccess, failPrefix }) {
+  const msgs = strippedMessages(messages)
+  if (msgs.length <= 1) {
+    messages.value.push({ role: 'bot', content: emptyMsg })
+    return
+  }
+  const title = prompt(promptText, defaultTitle())
+  if (!title) return
+  loadingRef.value = true
+  try {
+    const result = await run(title, msgs)
+    messages.value.push({ role: 'bot', content: onSuccess(result, title) })
+  } catch (err) {
+    messages.value.push({ role: 'bot', content: failPrefix + err.message })
+  } finally {
+    loadingRef.value = false
+  }
+}
+
 export function useChatStorage() {
   const savingChat = ref(false)
   const uploadingChat = ref(false)
@@ -17,48 +36,30 @@ export function useChatStorage() {
   const historyList = ref([])
   const loadingHistory = ref(false)
 
-  async function save(messages) {
-    const msgs = strippedMessages(messages)
-    if (msgs.length <= 1) {
-      messages.value.push({ role: 'bot', content: '⚠️ 还没有可保存的对话内容。' })
-      return
-    }
-    const title = prompt('给这段对话起个标题（保存到本地浏览器）：', defaultTitle())
-    if (!title) return
-    savingChat.value = true
-    try {
-      await saveLocalChat(title, msgs)
-      messages.value.push({
-        role: 'bot',
-        content: `✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。`,
-      })
-    } catch (err) {
-      messages.value.push({ role: 'bot', content: '⚠️ 保存失败：' + err.message })
-    } finally {
-      savingChat.value = false
-    }
+  function save(messages) {
+    return withTitleAction({
+      messages,
+      emptyMsg: '⚠️ 还没有可保存的对话内容。',
+      promptText: '给这段对话起个标题（保存到本地浏览器）：',
+      loadingRef: savingChat,
+      run: (title, msgs) => saveLocalChat(title, msgs),
+      onSuccess: () =>
+        '✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。',
+      failPrefix: '⚠️ 保存失败：',
+    })
   }
 
-  async function upload(messages) {
-    const msgs = strippedMessages(messages)
-    if (msgs.length <= 1) {
-      messages.value.push({ role: 'bot', content: '⚠️ 还没有可上传的对话内容。' })
-      return
-    }
-    const title = prompt('云端备份标题（公开存到 GitHub Issues）：', defaultTitle())
-    if (!title) return
-    uploadingChat.value = true
-    try {
-      const result = await saveChatToGitHub(title, msgs)
-      messages.value.push({
-        role: 'bot',
-        content: `☁️ 已上传到云端备份：\n\n📎 [${title}](${result.url})\n🎫 Issue #${result.number}`,
-      })
-    } catch (err) {
-      messages.value.push({ role: 'bot', content: '⚠️ 上传失败：' + err.message })
-    } finally {
-      uploadingChat.value = false
-    }
+  function upload(messages) {
+    return withTitleAction({
+      messages,
+      emptyMsg: '⚠️ 还没有可上传的对话内容。',
+      promptText: '云端备份标题（公开存到 GitHub Issues）：',
+      loadingRef: uploadingChat,
+      run: (title, msgs) => saveChatToGitHub(title, msgs),
+      onSuccess: (result, title) =>
+        `☁️ 已上传到云端备份：\n\n📎 [${title}](${result.url})\n🎫 Issue #${result.number}`,
+      failPrefix: '⚠️ 上传失败：',
+    })
   }
 
   async function loadHistory() {

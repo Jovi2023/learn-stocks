@@ -1,24 +1,21 @@
 #!/bin/bash
 # 确保 frp 隧道和代理服务持续运行
-# 用法：bash ~/jovi2026/quant-console/start-tunnel.sh
+# 用法：bash ~/jovi2026/learn-stocks/quant-console/start-tunnel.sh
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=load-env.sh
+source "$SCRIPT_DIR/load-env.sh"
 
 FRPC_CONF="$HOME/.openclaw/frpc.toml"
-CORS_PROXY="$HOME/jovi2026/learn-stocks/quant-console/cors-proxy.cjs"
-GITHUB_PROXY="$HOME/jovi2026/learn-stocks/quant-console/github-proxy.cjs"
+CORS_PROXY="$SCRIPT_DIR/cors-proxy.cjs"
+GITHUB_PROXY="$SCRIPT_DIR/github-proxy.cjs"
 GITHUB_ENV="$HOME/.openclaw/github.env"
 KAI_ENV="$HOME/.openclaw/kai.env"
 LOG_DIR="$HOME/.openclaw/logs"
 mkdir -p "$LOG_DIR"
 
-# 加载 GitHub Token（用于 github-proxy）
-if [ -f "$GITHUB_ENV" ]; then
-  export $(grep -v '^#' "$GITHUB_ENV" | xargs)
-fi
-
-# 加载 Kai API Token（用于 cors-proxy 鉴权注入）
-if [ -f "$KAI_ENV" ]; then
-  export $(grep -v '^#' "$KAI_ENV" | xargs)
-fi
+load_env_file "$GITHUB_ENV"
+load_env_file "$KAI_ENV"
 
 if [ -z "$GITHUB_TOKEN" ]; then
   echo "⚠️ 未设置 GITHUB_TOKEN，保存对话功能将不可用"

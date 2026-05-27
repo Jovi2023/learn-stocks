@@ -355,6 +355,13 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 - [x] **收紧 cors-proxy CORS 白名单** — 与 Worker 对齐（`jovi2023.github.io` / `console.jovi-trade.cn` / localhost），支持 `ALLOWED_ORIGINS` env 覆盖
 - [x] **重写 README.md** — 替换 Vue 脚手架模板，补功能/开发/部署/安全说明
 
+### 审计 P1 修复
+
+- [x] **修复 keepalive.sh / start-tunnel.sh 环境变量解析** — 抽 `load-env.sh`，逐行 `KEY=VALUE` 加载，避免 `xargs` 在特殊字符 token 下崩溃；脚本路径改 `$SCRIPT_DIR` 相对定位
+- [x] **重构 useChatStorage 重复逻辑** — 抽 `withTitleAction`，`save()` / `upload()` 共用
+- [x] **修复 A 股检测正则** — `detectMarket` 改为 `/^\d{6}$/`，不再把 `NOTHING` 等误判为 A 股
+- [x] **处理 untracked 评估文档** — 决策：保留在仓库外（`~/jovi2026/quant-console-评估与路线图.md`）作 2026-05-19 历史归档；进度维护以本 AGENTS.md 为准，不纳入 git
+
 ### 审计后推荐优先级
 
 | 优先级 | 任务 | 问题 | 预估 |
@@ -362,10 +369,10 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 | ~~🔴 P0~~ | ~~恢复对话功能~~ | ~~#2~~ | ✅ 已完成 |
 | ~~🔴 P0~~ | ~~收紧 cors-proxy CORS 白名单~~ | ~~#1~~ | ✅ 已完成 |
 | ~~🔴 P0~~ | ~~重写 README.md~~ | ~~#3~~ | ✅ 已完成 |
-| 🟡 P1 | 修复 keepalive.sh 环境变量解析 | #5 | 15min |
-| 🟡 P1 | 重构 useChatStorage 重复逻辑 | #6 | 30min |
-| 🟡 P1 | 修复 A 股检测正则 | #7 | 10min |
-| 🟡 P1 | 处理 untracked 评估文档 | #4 | 5min |
+| ~~🟡 P1~~ | ~~修复 keepalive.sh 环境变量解析~~ | ~~#5~~ | ✅ 已完成 |
+| ~~🟡 P1~~ | ~~重构 useChatStorage 重复逻辑~~ | ~~#6~~ | ✅ 已完成 |
+| ~~🟡 P1~~ | ~~修复 A 股检测正则~~ | ~~#7~~ | ✅ 已完成 |
+| ~~🟡 P1~~ | ~~处理 untracked 评估文档~~ | ~~#4~~ | ✅ 已完成（保留仓库外归档） |
 | 🟢 P2 | 加 rate limit | #8 | 1h |
 | 🟢 P2 | 键盘快捷键 | #9 | 1h |
 | 🟢 P3 | 离线/断连提示 | #10 | 30min |
