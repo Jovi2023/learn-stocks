@@ -370,6 +370,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 
 - [x] **离线/断连提示**（审计 #10）— `chatError.js` + `useChat`：`Failed to fetch` / `navigator.onLine` / 401 / 5xx 分场景文案，替代笼统 `err.message`
 - [x] **键盘快捷键**（审计 #9）— `useKeyboardShortcuts`：Alt+1~4 切右栏 tab；Esc 关历史 modal / 移动 drawer；`ChatPanel` 改为 Ctrl/Cmd+Enter 发送、Enter 换行
+- [x] **rate limit**（审计 #8）— `rate-limit.cjs` + `cors-proxy.cjs`：按 IP 固定窗口，Gateway 默认 30/min、`/api/*` 10/min，可用 `RATE_LIMIT_*` env 覆盖；Worker `rate-limit.js` + `github-proxy.js` 默认 10/min（`RATE_LIMIT_PER_MIN`），429 + `Retry-After`
 
 ### 审计后推荐优先级
 
@@ -382,7 +383,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 | ~~🟡 P1~~ | ~~重构 useChatStorage 重复逻辑~~ | ~~#6~~ | ✅ 已完成 |
 | ~~🟡 P1~~ | ~~修复 A 股检测正则~~ | ~~#7~~ | ✅ 已完成 |
 | ~~🟡 P1~~ | ~~处理 untracked 评估文档~~ | ~~#4~~ | ✅ 已完成（保留仓库外归档） |
-| ~~🟢 P2~~ | ~~加 rate limit~~ | ~~#8~~ | 待做 |
+| ~~🟢 P2~~ | ~~加 rate limit~~ | ~~#8~~ | ✅ 已完成 |
 | ~~🟢 P2~~ | ~~键盘快捷键~~ | ~~#9~~ | ✅ 已完成 |
 | ~~🟢 P3~~ | ~~离线/断连提示~~ | ~~#10~~ | ✅ 已完成 |
 

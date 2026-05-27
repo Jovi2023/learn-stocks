@@ -24,6 +24,14 @@ export function formatChatError(err, { timeoutSec = 120 } = {}) {
     ].join('\n')
   }
 
+  if (/请求过于频繁|rate_limit/i.test(msg) || /\(429\)/.test(msg)) {
+    return [
+      '⏳ **请求过于频繁**',
+      '',
+      '已触发限流保护，请稍等一分钟后再试。',
+    ].join('\n')
+  }
+
   if (/API 请求失败 \(401\)/.test(msg)) {
     return [
       '🔐 **鉴权失败（401）**',

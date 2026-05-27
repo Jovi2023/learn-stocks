@@ -8,6 +8,8 @@
 //
 // 与 .cjs 版本的差异：CORS 不再 `*`，按白名单收紧；新增 payload 校验避免被滥用灌爆 Issues。
 
+import { checkRateLimit } from './rate-limit.js'
+
 const DEFAULT_ALLOWED = [
   'https://jovi2023.github.io',
   'https://console.jovi-trade.cn',
@@ -96,6 +98,17 @@ export default {
     // origin 为空（curl 等）放行 —— 同源 / 非浏览器场景；origin 非空必须在白名单
     if (origin && !allowed.includes(origin)) {
       return jsonResponse(403, { error: 'Origin not allowed' }, cors)
+    }
+
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown'
+    const maxPerMin = parseInt(env.RATE_LIMIT_PER_MIN, 10) || 10
+    const rl = checkRateLimit(`save:${ip}`, { maxPerWindow: maxPerMin })
+    if (!rl.allowed) {
+      return jsonResponse(
+        429,
+        { error: { message: '请求过于频繁，请稍后再试', type: 'rate_limit_exceeded' } },
+        { ...cors, 'Retry-After': String(rl.retryAfterSec) },
+      )
     }
 
     if (!env.GITHUB_TOKEN) {

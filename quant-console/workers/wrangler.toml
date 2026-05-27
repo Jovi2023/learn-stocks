@@ -10,3 +10,4 @@ workers_dev = true
 REPO_OWNER = "Jovi2023"
 REPO_NAME = "learn-stocks"
 ALLOWED_ORIGINS = "https://jovi2023.github.io,https://console.jovi-trade.cn,http://localhost:5173,http://localhost:5174"
+RATE_LIMIT_PER_MIN = "10"

@@ -11,6 +11,12 @@ const http = require('http')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const {
+  clientIp,
+  rateLimitJson,
+  kaiLimiter,
+  apiLimiter,
+} = require('./rate-limit.cjs')
 
 const GATEWAY_PORT = 18789
 const GITHUB_PROXY_PORT = 18889
@@ -52,6 +58,8 @@ function parseAllowedOrigins() {
 }
 
 const ALLOWED_ORIGINS = parseAllowedOrigins()
+const limitKai = kaiLimiter()
+const limitApi = apiLimiter()
 
 function corsHeaders(origin) {
   const ok = origin && ALLOWED_ORIGINS.includes(origin)
@@ -84,7 +92,21 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  if (req.url.startsWith('/api/')) {
+  const ip = clientIp(req)
+  const isApi = req.url.startsWith('/api/')
+  const rl = (isApi ? limitApi : limitKai).check(`${isApi ? 'api' : 'kai'}:${ip}`)
+  if (!rl.allowed) {
+    for (const [key, value] of Object.entries(cors)) {
+      res.setHeader(key, value)
+    }
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Retry-After', String(rl.retryAfterSec))
+    res.writeHead(429)
+    res.end(rateLimitJson(rl.retryAfterSec))
+    return
+  }
+
+  if (isApi) {
     forwardTo(GITHUB_PROXY_PORT, req, res, { injectAuth: false, cors })
     return
   }
