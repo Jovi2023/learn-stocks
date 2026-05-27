@@ -16,7 +16,14 @@
         </div>
         <div v-else class="history-list">
           <div v-for="item in items" :key="item.id" class="history-item">
-            <div class="history-info">
+            <div
+              class="history-info"
+              role="button"
+              tabindex="0"
+              :title="`恢复「${item.title}」`"
+              @click="emit('restore', item.id)"
+              @keydown.enter="emit('restore', item.id)"
+            >
               <div class="history-title">{{ item.title }}</div>
               <div class="history-meta">
                 <span>{{ formatDate(item.created) }}</span>
@@ -34,7 +41,7 @@
       </div>
       <div class="modal-footer">
         <span class="modal-footer-hint">
-          📌 数据存在本地浏览器（IndexedDB），换浏览器 / 隐身模式 / 清缓存都会丢
+          📌 点击条目恢复对话 · 数据存在本地浏览器，换浏览器 / 清缓存会丢
         </span>
       </div>
     </div>
@@ -46,7 +53,7 @@ defineProps({
   loading: { type: Boolean, default: false },
   items: { type: Array, default: () => [] },
 })
-const emit = defineEmits(['close', 'delete'])
+const emit = defineEmits(['close', 'delete', 'restore'])
 
 function formatDate(iso) {
   const d = new Date(iso)

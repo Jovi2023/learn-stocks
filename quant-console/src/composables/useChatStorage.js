@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { saveLocalChat, listLocalChats, deleteLocalChat } from '../utils/localStore.js'
+import { saveLocalChat, listLocalChats, getLocalChat, deleteLocalChat } from '../utils/localStore.js'
 import { saveChatToGitHub } from '../utils/storage.js'
 
 function defaultTitle() {
@@ -83,6 +83,22 @@ export function useChatStorage() {
     showHistory.value = false
   }
 
+  async function restoreFromHistory(id, { messages, restore, loading }) {
+    const chat = await getLocalChat(id)
+    if (!chat?.messages?.length) return
+
+    const hasUserMsg = messages.value.some((m) => m.role === 'user')
+    if (hasUserMsg && !confirm(`恢复「${chat.title}」会替换当前对话，继续？`)) return
+
+    if (loading.value) {
+      messages.value.push({ role: 'bot', content: '⚠️ 等 AI 回复完再恢复历史。' })
+      return
+    }
+
+    restore(chat.messages)
+    showHistory.value = false
+  }
+
   return {
     savingChat,
     uploadingChat,
@@ -94,5 +110,6 @@ export function useChatStorage() {
     loadHistory,
     removeFromHistory,
     closeHistory,
+    restoreFromHistory,
   }
 }

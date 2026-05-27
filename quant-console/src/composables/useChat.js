@@ -67,5 +67,12 @@ export function useChat() {
     if (activeController) activeController.abort()
   }
 
-  return { messages, loading, send, cancel }
+  // 用本地存档替换当前对话；AI 请求进行中时不操作
+  function restore(storedMessages) {
+    if (loading.value) return { ok: false, reason: 'loading' }
+    messages.value = storedMessages.map(({ role, content }) => ({ role, content }))
+    return { ok: true }
+  }
+
+  return { messages, loading, send, cancel, restore }
 }

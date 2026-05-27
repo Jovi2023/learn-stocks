@@ -36,6 +36,7 @@
       :items="historyList"
       @close="closeHistory"
       @delete="removeFromHistory"
+      @restore="onRestoreHistory"
     />
   </div>
 </template>
@@ -61,7 +62,7 @@ const tabs = [
   { id: 'analyze', icon: '🧠', label: '分析' },
 ]
 
-const { messages, loading, send, cancel } = useChat()
+const { messages, loading, send, cancel, restore } = useChat()
 const {
   savingChat,
   uploadingChat,
@@ -73,6 +74,7 @@ const {
   loadHistory,
   removeFromHistory,
   closeHistory,
+  restoreFromHistory,
 } = useChatStorage()
 
 function onSwitchTab(id) {
@@ -83,5 +85,9 @@ function onSwitchTab(id) {
 function onPanelRun(prompt) {
   send(prompt)
   drawerOpen.value = false
+}
+
+function onRestoreHistory(id) {
+  restoreFromHistory(id, { messages, restore, loading })
 }
 </script>

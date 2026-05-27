@@ -34,6 +34,36 @@ function loadKaiToken() {
 const KAI_API_TOKEN = loadKaiToken()
 const DEFAULT_AGENT_ID = process.env.KAI_AGENT_ID || 'main'
 
+// 与 Cloudflare Worker 白名单对齐；可通过 ALLOWED_ORIGINS 环境变量覆盖（逗号分隔）
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://jovi2023.github.io',
+  'https://console.jovi-trade.cn',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+]
+
+function parseAllowedOrigins() {
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+  }
+  return DEFAULT_ALLOWED_ORIGINS
+}
+
+const ALLOWED_ORIGINS = parseAllowedOrigins()
+
+function corsHeaders(origin) {
+  const ok = origin && ALLOWED_ORIGINS.includes(origin)
+  return {
+    'Access-Control-Allow-Origin': ok ? origin : 'null',
+    Vary: 'Origin',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-openclaw-agent-id',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
 if (!KAI_API_TOKEN) {
   console.error('❌ 找不到 KAI_API_TOKEN。请二选一：')
   console.error('   echo "KAI_API_TOKEN=<your-token>" > ~/.openclaw/kai.env  &&  chmod 600 ~/.openclaw/kai.env')
@@ -42,26 +72,27 @@ if (!KAI_API_TOKEN) {
 }
 
 const server = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', '*')
-  res.setHeader('Access-Control-Max-Age', '86400')
+  const origin = req.headers.origin
+  const cors = corsHeaders(origin)
 
   if (req.method === 'OPTIONS') {
+    for (const [key, value] of Object.entries(cors)) {
+      res.setHeader(key, value)
+    }
     res.writeHead(204)
     res.end()
     return
   }
 
   if (req.url.startsWith('/api/')) {
-    forwardTo(GITHUB_PROXY_PORT, req, res, { injectAuth: false })
+    forwardTo(GITHUB_PROXY_PORT, req, res, { injectAuth: false, cors })
     return
   }
 
-  forwardTo(GATEWAY_PORT, req, res, { injectAuth: true })
+  forwardTo(GATEWAY_PORT, req, res, { injectAuth: true, cors })
 })
 
-function forwardTo(targetPort, req, res, { injectAuth }) {
+function forwardTo(targetPort, req, res, { injectAuth, cors }) {
   // 浅拷贝避免污染原对象；Node 已经把 header key 全部小写化
   const headers = { ...req.headers }
 
@@ -91,9 +122,9 @@ function forwardTo(targetPort, req, res, { injectAuth }) {
     for (const [key, value] of Object.entries(proxyRes.headers)) {
       res.setHeader(key, value)
     }
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', '*')
+    for (const [key, value] of Object.entries(cors)) {
+      res.setHeader(key, value)
+    }
 
     res.writeHead(proxyRes.statusCode)
     proxyRes.pipe(res)

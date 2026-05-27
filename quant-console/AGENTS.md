@@ -2,7 +2,7 @@
 
 > 本文件是 **跨会话的项目长期记忆**。
 > 每次新对话开始，AI 应先读本文件以快速对齐上下文。
-> 完整背景与路线图：`/Users/jovi2026/quant-console-评估与路线图.md`
+> 完整背景与路线图：见第 6.2 节（2026-05-22 项目审计后的待办路线图）
 
 ---
 
@@ -37,8 +37,8 @@
 | Markdown | `marked` + `DOMPurify` + `marked-highlight` | DOMPurify 是安全红线，必须有；marked-highlight 是 marked v18+ 接代码高亮的官方扩展 |
 | 图表 | `chart.js`（已装，待接入） | 等 P3 差异化定 AI 图表 schema 后再接，不要再装别的图表库 |
 | 代码高亮 | `highlight.js`（已接入，core + python/javascript/bash/json） | 按需 registerLanguage，要新语言现加；主题 atom-one-dark |
-| 后端代理 | `cors-proxy.cjs` + `github-proxy.cjs` | 计划迁移到 Cloudflare Workers |
-| 部署 | GitHub Pages（前端） + frp 隧道（API） | 部署目标：API 迁 Workers，前端不变 |
+| 后端代理 | `cors-proxy.cjs` + `github-proxy.cjs`（dev）+ Cloudflare Worker（prod） | Worker 已部署生产；本地 cjs 保留做 dev fallback |
+| 部署 | GitHub Pages（前端） + frp 隧道 + Cloudflare Worker（API） | Worker 已切生产，域名 console.jovi-trade.cn 待指向 |
 
 **禁止引入的大型依赖**：lodash 全量、moment、jQuery、第二个图表库、第二个 markdown 库。
 
@@ -58,7 +58,7 @@
 
 ### Vue 组件
 
-- 一个文件 **不超过 200 行**（当前 `App.vue` 422 行待拆分）
+- 一个文件 **不超过 200 行**（所有组件均 ≤100 行，已达标）
 - 业务逻辑抽到 `src/composables/use*.js`
 - 组件命名 PascalCase：`BacktestPanel.vue`
 - 重复 2 次以上的逻辑（如 `syncMarketFromSymbol` / `syncDataMarket`）必须抽出来
@@ -326,6 +326,52 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 
 ---
 
+- [x] **仓库精简为 quant-console 唯一项目**（2026-05-22，commit `60cfbed` / `10ababe`）
+  - 删除 VitePress 博客（23 篇 .md + 配置）
+  - 重写 deploy.yml 为纯 quant-console 构建流程
+  - 修复 Pages 部署路径嵌套问题（`_site/learn-stocks/quant-console/` → `_site/quant-console/`）
+  - 更新 `.gitignore` 移除 VitePress 规则
+
+### 🆕 2026-05-22 全量审计发现（deepseek-v4-pro）
+
+> 详细评估见 `quant-console-评估与路线图.md`（仓库外 untracked，2026-05-19 初始版已基本全部完成）。以下为本次审计新增问题。
+
+| # | 级别 | 问题 | 位置 | 说明 |
+|---|---|---|---|---|
+| 1 | 🔴 | cors-proxy CORS 仍为 `*` | `cors-proxy.cjs` | Worker 侧已收紧白名单，cors-proxy 未同步——违反红线第 3 条。`api.jovi-trade.cn` 公网入口等价全开放 |
+| 2 | 🔴 | 历史对话不可恢复 | `HistoryModal.vue` + `useChatStorage.js` | 列表只展示和删除，点条目无反应。IndexedDB 存了完整 messages 但漏了 `restoreChat(id)` |
+| 3 | 🔴 | README.md 是脚手架模板 | `README.md` | 内容为 `Vue 3 + Vite` 默认文案，无项目说明 |
+| 4 | 🟡 | untracked 评估文档 | 仓库根 | `quant-console-评估与路线图.md` 未进 git；AGENTS.md 已取代其进度功能 |
+| 5 | 🟡 | keepalive.sh 环境变量解析 bug | `keepalive.sh` | `export $(grep ... | xargs)` 在 token 值含空格/特殊字符时崩溃 |
+| 6 | 🟡 | useChatStorage 重复逻辑 | `useChatStorage.js` | `save()` 和 `upload()` 结构高度重复（检查→prompt→loading→try/catch→push），可抽 `withTitleAction` |
+| 7 | 🟡 | A 股识别正则过粗 | `useMarketDetect.js` | `startsWith('0')` 匹配任何以 0 开头的字符串（如 `NOTHING`），应加 `/^\d{6}$/` |
+| 8 | 🟢 | 无 rate limit | `cors-proxy.cjs` + Worker | 两个代理端均无请求频率限制，极端下会被刷 API 额度 |
+| 9 | 🟢 | 无键盘快捷键 | 全局 | 缺 Ctrl+Enter 发送、Tab 切换面板 |
+| 10 | 🟢 | 无离线/断连提示 | `useChat.js` | 后端不可用时只显示通用错误，无法区分网络故障 vs API 超时 |
+
+### 审计 P0 修复（2026-05-22）
+
+- [x] **恢复对话功能** — `getLocalChat` + HistoryModal 点击恢复 + `useChat.restore()`；有用户消息时 confirm 防误覆盖
+- [x] **收紧 cors-proxy CORS 白名单** — 与 Worker 对齐（`jovi2023.github.io` / `console.jovi-trade.cn` / localhost），支持 `ALLOWED_ORIGINS` env 覆盖
+- [x] **重写 README.md** — 替换 Vue 脚手架模板，补功能/开发/部署/安全说明
+
+### 审计后推荐优先级
+
+| 优先级 | 任务 | 问题 | 预估 |
+|---|---|---|---|
+| ~~🔴 P0~~ | ~~恢复对话功能~~ | ~~#2~~ | ✅ 已完成 |
+| ~~🔴 P0~~ | ~~收紧 cors-proxy CORS 白名单~~ | ~~#1~~ | ✅ 已完成 |
+| ~~🔴 P0~~ | ~~重写 README.md~~ | ~~#3~~ | ✅ 已完成 |
+| 🟡 P1 | 修复 keepalive.sh 环境变量解析 | #5 | 15min |
+| 🟡 P1 | 重构 useChatStorage 重复逻辑 | #6 | 30min |
+| 🟡 P1 | 修复 A 股检测正则 | #7 | 10min |
+| 🟡 P1 | 处理 untracked 评估文档 | #4 | 5min |
+| 🟢 P2 | 加 rate limit | #8 | 1h |
+| 🟢 P2 | 键盘快捷键 | #9 | 1h |
+| 🟢 P3 | 离线/断连提示 | #10 | 30min |
+
+---
+
 ## 9. 危险操作清单（做之前先想想）
 
 - ❗ 改 `vite.config.js` 的 `base` → 部署路径会错
@@ -340,7 +386,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 | 该写在哪 | 内容 |
 |---|---|
 | 本文件 (`AGENTS.md`) | 不变的约定、目标、红线、进度 |
-| `quant-console-评估与路线图.md` | 一次性的分析报告、对标参考、完整 checklist |
+| `quant-console-评估与路线图.md` | 2026-05-19 初始评估报告（原始版，已完成其中全部 P0-P2 项） |
 | `.cursor/rules/*.mdc` | 自动加载的硬规矩（每会话强制） |
 | 代码注释 | 解释"为什么这么写"，不解释"在做什么" |
 | commit message | 解释"这个 PR 改了什么 + 为什么" |
