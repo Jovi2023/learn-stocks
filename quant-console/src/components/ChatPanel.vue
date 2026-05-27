@@ -5,7 +5,7 @@
         <div class="msg-avatar">{{ msg.role === 'user' ? '👤' : '🜁' }}</div>
         <div class="msg-content">
           <div class="msg-name">{{ msg.role === 'user' ? '你' : '凯' }}</div>
-          <div class="msg-body" v-html="renderMarkdown(msg.content)"></div>
+          <ChatMessageBody :content="msg.content" />
         </div>
       </div>
       <div v-if="loading" class="msg bot">
@@ -39,7 +39,7 @@
 
 <script setup>
 import { ref, nextTick, watch } from 'vue'
-import { renderMarkdown } from '../utils/markdown.js'
+import ChatMessageBody from './ChatMessageBody.vue'
 import { useCodeCopy } from '../composables/useCodeCopy.js'
 
 const { handleMessagesClick } = useCodeCopy()

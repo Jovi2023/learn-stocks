@@ -14,7 +14,7 @@
 
 ## 技术栈
 
-Vue 3 + Vite · marked + DOMPurify · highlight.js · idb-keyval · chart.js（待接入）
+Vue 3 + Vite · marked + DOMPurify · highlight.js · idb-keyval · chart.js（`chart` JSON 块）
 
 ## 本地开发
 

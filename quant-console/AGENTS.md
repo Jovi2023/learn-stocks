@@ -229,7 +229,17 @@ quant-console/
 
 ### P3 - 差异化（核心卖点）
 
-- [ ] 接 Chart.js，AI 返回结构化数据时画图
+- [x] **接 Chart.js，AI 返回结构化数据时画图**（2026-05-27，C2）
+  - **协议**：回复里用 ` ```chart ` + JSON + ` ``` `；`chartSpec.js` 校验（`line`|`bar`，labels≤120，datasets≤8，数值有限）
+  - **JSON schema**：
+    ```json
+    { "type": "line|bar", "title": "可选", "labels": ["x1","x2"],
+      "datasets": [{ "label": "序列名", "data": [1,2], "color": "#3b82f6" }] }
+    ```
+  - **渲染**：`messageParts.js` 拆分 → `ChatMessageBody.vue` + `KaiChart.vue`（Chart.js 按需 register line/bar）
+  - **Prompt**：`CHART_API_PREFIX` 自动拼进每次 API 请求（不进聊天记录）；`CHART_PROMPT_HINT` 可进 OpenClaw 系统提示
+  - **兼容**：整段裸 JSON（合法时）当图表；`[embed …]` 替换为提示文案
+  - 校验失败则原样当 markdown 代码块展示，不崩整条消息
 - [ ] 接 Pyodide，代码块"▶ 运行"按钮
 - [x] **代码块"📋 复制"按钮**（2026-05-27）
   - `markdown.js`：`wrapCodeBlocks` 给每个 `<pre>` 包 `.code-block-wrap` + `.code-copy-btn`（经 DOMPurify 后再进 `v-html`）

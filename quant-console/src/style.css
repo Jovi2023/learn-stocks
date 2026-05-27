@@ -74,6 +74,10 @@ body { background: #0f172a; color: #e2e8f0; }
 .msg-body th { background: #1e293b; color: #94a3b8; font-weight: 600; }
 .msg-body blockquote { border-left: 3px solid #3b82f6; padding-left: 12px; margin: 8px 0; color: #94a3b8; }
 
+.kai-chart { margin: 10px 0; padding: 10px 12px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; }
+.kai-chart-title { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-bottom: 8px; }
+.kai-chart-canvas-wrap { position: relative; height: 260px; }
+
 .thinking { font-size: 24px; letter-spacing: 4px; color: #64748b; }
 .dot { animation: blink 1.4s infinite; }
 .dot:nth-child(2) { animation-delay: 0.2s; }

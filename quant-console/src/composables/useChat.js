@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { callKai } from '../utils/api.js'
 import { formatChatError } from '../utils/chatError.js'
+import { CHART_API_PREFIX } from '../utils/chartSpec.js'
 
 // AI 接口超时上限。Kai 偶尔慢但 2 分钟没回基本可以判死了，
 // 避免 fetch 挂在那回收不掉。
@@ -33,7 +34,7 @@ export function useChat() {
     // 用户取消 + 超时合成一个 signal；任一触发即 abort fetch
     const signal = AbortSignal.any([userCtrl.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
     try {
-      const result = await callKai(text, { signal })
+      const result = await callKai(`${CHART_API_PREFIX}\n\n${text}`, { signal })
       messages.value.push({ role: 'bot', content: result.text })
     } catch (err) {
       if (userCtrl.signal.aborted) {
