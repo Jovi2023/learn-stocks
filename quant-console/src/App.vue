@@ -47,6 +47,7 @@
       @close="closeHistory"
       @delete="removeFromHistory"
       @restore="onRestoreHistory"
+      @open-file="onOpenFromDisk"
     />
   </div>
 </template>
@@ -89,6 +90,7 @@ const {
   removeFromHistory,
   closeHistory,
   restoreFromHistory,
+  openFromDisk,
   titlePrompt,
   closeTitlePrompt,
   setTitlePromptTitle,
@@ -117,5 +119,9 @@ function onPanelRun(prompt) {
 
 function onRestoreHistory(id) {
   restoreFromHistory(id, { restore, loading })
+}
+
+function onOpenFromDisk() {
+  openFromDisk({ restore, loading })
 }
 </script>

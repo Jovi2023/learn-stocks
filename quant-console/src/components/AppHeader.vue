@@ -19,8 +19,8 @@
       <button
         class="save-btn"
         :disabled="savingChat"
-        title="保存对话到本地浏览器"
-        aria-label="保存对话到本地"
+        title="保存对话为 JSON 文件到硬盘"
+        aria-label="保存对话到硬盘"
         @click="$emit('save')"
       >
         <span class="btn-icon">{{ savingChat ? '⏳' : '💾' }}</span>

@@ -2,13 +2,16 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal title-prompt-modal">
       <div class="modal-header">
-        <h3>{{ mode === 'upload' ? '☁️ 上传到云端' : '💾 保存到本地' }}</h3>
+        <h3>{{ mode === 'upload' ? '☁️ 上传到云端' : '💾 保存到硬盘' }}</h3>
         <button class="modal-close" type="button" @click="$emit('close')">✕</button>
       </div>
       <div class="modal-body">
         <label class="title-prompt-label">
-          {{ mode === 'upload' ? '云端备份标题（公开 GitHub Issue）' : '对话标题（存到本浏览器）' }}
+          {{ mode === 'upload' ? '云端备份标题（公开 GitHub Issue）' : '文件名（保存为 .json 到你电脑）' }}
         </label>
+        <p v-if="mode === 'save'" class="modal-hint">
+          Chrome / Edge 可自选保存位置；Safari 等会下载到「下载」文件夹，你再移到任意目录。
+        </p>
         <input
           ref="inputRef"
           :value="title"

@@ -9,7 +9,7 @@
 - 与 Kai（OpenClaw Gateway）对话，支持美股 + A 股
 - 右侧工具面板快速发起回测、代码、数据、分析类 prompt
 - Markdown 渲染 + 代码高亮（DOMPurify 防 XSS）
-- 本地对话存档（IndexedDB），可选 ☁️ 上传到 GitHub Issues 备份
+- 💾 对话存档为 JSON 文件保存到硬盘；📋 可从硬盘打开恢复；☁️ 可选上传 GitHub Issues
 - 移动端底部 Drawer 工具面板
 
 ## 技术栈

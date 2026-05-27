@@ -1,6 +1,7 @@
 import { ref } from 'vue'
-import { saveLocalChat, listLocalChats, getLocalChat, deleteLocalChat } from '../utils/localStore.js'
+import { listLocalChats, getLocalChat, deleteLocalChat } from '../utils/localStore.js'
 import { saveChatToGitHub } from '../utils/storage.js'
+import { saveChatToDisk, openChatFromDisk } from '../utils/fileSave.js'
 
 function defaultTitle() {
   return '量化分析 ' + new Date().toLocaleDateString('zh-CN')
@@ -47,6 +48,7 @@ export function useChatStorage(chatMessages) {
       const result = await run(title, msgs)
       pushBotMessage(onSuccess(result, title))
     } catch (err) {
+      if (err?.message === '已取消保存') return
       pushBotMessage(failPrefix + err.message)
     } finally {
       loadingRef.value = false
@@ -79,10 +81,12 @@ export function useChatStorage(chatMessages) {
       await runTitleAction({
         title: trimmed,
         loadingRef: savingChat,
-        run: (t, msgs) => saveLocalChat(t, msgs),
-        onSuccess: () =>
-          '✅ 已保存到本地浏览器（IndexedDB）。\n\n> 数据只在你当前浏览器里，换电脑 / 隐身模式看不到。点 ☁️ 可上传一份到云端备份/分享。',
-        failPrefix: '⚠️ 保存失败：',
+        run: (t, msgs) => saveChatToDisk(t, msgs),
+        onSuccess: (result) =>
+          result.method === 'picker'
+            ? `✅ 已保存到硬盘：\`${result.filename}\`\n\n> 文件在你选择的路径，可用 📋 历史 →「从硬盘打开」恢复。`
+            : `✅ 已下载到默认下载文件夹：\`${result.filename}\`\n\n> 请把文件移到你想放的位置；恢复时用 📋 →「从硬盘打开」。`,
+        failPrefix: '⚠️ 保存到硬盘失败：',
       })
     } else if (modeCopy === 'upload') {
       await runTitleAction({
@@ -111,7 +115,7 @@ export function useChatStorage(chatMessages) {
       historyList.value = await listLocalChats()
     } catch (err) {
       historyList.value = []
-      console.error('加载本地历史失败:', err)
+      console.error('加载旧版浏览器内存档失败:', err)
     } finally {
       loadingHistory.value = false
     }
@@ -124,6 +128,27 @@ export function useChatStorage(chatMessages) {
 
   function closeHistory() {
     showHistory.value = false
+  }
+
+  async function openFromDisk({ restore, loading }) {
+    if (loading.value) {
+      pushBotMessage('⚠️ 等 AI 回复完再打开存档。')
+      return
+    }
+    try {
+      const data = await openChatFromDisk()
+      if (!data?.messages?.length) return
+
+      const hasUserMsg = chatMessages.value.some((m) => m.role === 'user')
+      if (hasUserMsg && !confirm(`打开「${data.title}」会替换当前对话，继续？`)) return
+
+      restore(data.messages)
+      showHistory.value = false
+      pushBotMessage(`✅ 已从硬盘打开：\`${data.filename || data.title}\``)
+    } catch (err) {
+      if (err?.message?.includes('Abort')) return
+      pushBotMessage('⚠️ 打开文件失败：' + (err?.message || String(err)))
+    }
   }
 
   async function restoreFromHistory(id, { restore, loading }) {
@@ -140,6 +165,7 @@ export function useChatStorage(chatMessages) {
 
     restore(chat.messages)
     showHistory.value = false
+    pushBotMessage('✅ 已恢复旧版浏览器内存档（建议用 💾 重新保存到硬盘）。')
   }
 
   return {
@@ -158,5 +184,6 @@ export function useChatStorage(chatMessages) {
     removeFromHistory,
     closeHistory,
     restoreFromHistory,
+    openFromDisk,
   }
 }
