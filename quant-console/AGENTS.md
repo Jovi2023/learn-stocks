@@ -38,7 +38,7 @@
 | 图表 | `chart.js`（已装，待接入） | 等 P3 差异化定 AI 图表 schema 后再接，不要再装别的图表库 |
 | 代码高亮 | `highlight.js`（已接入，core + python/javascript/bash/json） | 按需 registerLanguage，要新语言现加；主题 atom-one-dark |
 | 后端代理 | `cors-proxy.cjs` + `github-proxy.cjs`（dev）+ Cloudflare Worker（prod） | Worker 已部署生产；本地 cjs 保留做 dev fallback |
-| 部署 | GitHub Pages（前端） + frp 隧道 + Cloudflare Worker（API） | Worker 已切生产，域名 console.jovi-trade.cn 待指向 |
+| 部署 | GitHub Pages（前端） + frp 隧道 + Cloudflare Worker（API） | 前端 https://console.jovi-trade.cn ，API https://api.jovi-trade.cn |
 
 **禁止引入的大型依赖**：lodash 全量、moment、jQuery、第二个图表库、第二个 markdown 库。
 
@@ -207,7 +207,9 @@ quant-console/
   - `vite.config.js`：`base: '/'`；`public/CNAME` → `console.jovi-trade.cn`
   - `deploy.yml`：构建产物部署到 Pages 根目录（不再嵌套 `_site/quant-console/`）
   - CORS / Worker 白名单已含 `https://console.jovi-trade.cn`（此前已预留）
-  - **用户侧待办（DNS）**：Cloudflare `console` CNAME → GitHub Pages；仓库 Settings → Pages → Custom domain 填 `console.jovi-trade.cn`；生效后旧 URL `jovi2023.github.io/learn-stocks/quant-console/` 不再可用
+  - DNS：腾讯云 `console` CNAME → `jovi2023.github.io`；GitHub Pages Custom domain + Enforce HTTPS 已生效（2026-05-27 用户确认）
+  - VPS nginx：去掉重复 CORS `add_header`，只反代 `127.0.0.1:8888`；`http://console` 白名单作 HTTPS 签发前的过渡（`d881d00`）
+  - 旧 URL `jovi2023.github.io/learn-stocks/quant-console/` 已废弃
 - [x] **移动端 side-panel → 底部 Drawer**（2026-05-20）
   - 桌面端零变化（≥769px 不走 drawer 分支，原 flex 布局 + side-panel:360px 保持）
   - 移动端 ≤768px：
@@ -274,13 +276,14 @@ quant-console/
 
 ### Pending
 
-- [ ] **绑定 `console.jovi-trade.cn`（方案 B 收尾）**
-  1. Cloudflare DNS：`console` → CNAME → `jovi2023.github.io`（或 GitHub Pages 提示的目标）
-  2. GitHub repo `learn-stocks` → Settings → Pages → Custom domain → `console.jovi-trade.cn`
-  3. 等 DNS + HTTPS 生效后访问 https://console.jovi-trade.cn/ 验证（需 Mac `start-tunnel.sh` 才能对话）
+> 当前无 pending 待办。
 
 ### 已完成
 
+- [x] **绑定 `console.jovi-trade.cn`（方案 B 收尾）**（2026-05-27）
+  - 腾讯云 DNS：`console` CNAME → `jovi2023.github.io`
+  - GitHub Pages Custom domain + HTTPS（Let's Encrypt，`CN=console.jovi-trade.cn`）
+  - VPS `api.jovi-trade.cn` nginx 去掉重复 CORS；对话需 Mac `start-tunnel.sh`
 - [x] **Delete 测试 Issue #5**（2026-05-20）
   - Worker 端到端验证 curl 临时创建的 `[ci-test] worker e2e` Issue，部署验证通过后应关闭
 
