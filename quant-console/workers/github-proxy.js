@@ -13,6 +13,7 @@ import { checkRateLimit } from './rate-limit.js'
 const DEFAULT_ALLOWED = [
   'https://jovi2023.github.io',
   'https://console.jovi-trade.cn',
+  'http://console.jovi-trade.cn',
   'http://localhost:5173',
   'http://localhost:5174',
 ]

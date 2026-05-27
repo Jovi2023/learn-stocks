@@ -44,6 +44,7 @@ const DEFAULT_AGENT_ID = process.env.KAI_AGENT_ID || 'main'
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://jovi2023.github.io',
   'https://console.jovi-trade.cn',
+  'http://console.jovi-trade.cn', // 未开 Enforce HTTPS 时浏览器 Origin 为 http
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5173',
