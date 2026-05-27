@@ -9,7 +9,7 @@ body { background: #0f172a; color: #e2e8f0; }
 .main { display: flex; flex: 1; overflow: hidden; }
 
 /* ---------- Header ---------- */
-.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0; position: relative; z-index: 10; }
 .header-left { display: flex; align-items: center; gap: 10px; }
 .logo { font-size: 28px; }
 .header-left h1 { font-size: 18px; font-weight: 600; color: #f1f5f9; }
@@ -193,7 +193,7 @@ body { background: #0f172a; color: #e2e8f0; }
 /* ---------- 响应式 ---------- */
 @media (max-width: 768px) {
   /* Header：标题文字让位给按钮，按钮只显示 icon（label 用 :title / aria-label 兜底） */
-  .header { padding: 10px 14px; }
+  .header { padding: 10px 14px; position: relative; z-index: 51; }
   .header-left h1 { display: none; }
   .header-right { display: flex; gap: 2px; flex-wrap: nowrap; }
   .btn-label { display: none; }

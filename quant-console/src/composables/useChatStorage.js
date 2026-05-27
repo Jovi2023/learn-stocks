@@ -7,13 +7,20 @@ function defaultTitle() {
 }
 
 function strippedMessages(messages) {
-  return messages.value.filter((m) => m.role !== 'system')
+  const list = messages?.value ?? messages
+  if (!Array.isArray(list)) return []
+  return list.filter((m) => m.role !== 'system')
+}
+
+function pushBotMessage(messages, content) {
+  const ref = messages?.value !== undefined ? messages : null
+  if (ref) ref.value.push({ role: 'bot', content })
 }
 
 function ensureSaveable(messages) {
   const msgs = strippedMessages(messages)
   if (msgs.length <= 1) {
-    messages.value.push({ role: 'bot', content: '⚠️ 还没有可保存的对话内容。' })
+    pushBotMessage(messages, '⚠️ 还没有可保存的对话内容。')
     return null
   }
   return msgs
@@ -24,9 +31,9 @@ async function runTitleAction({ messages, title, loadingRef, run, onSuccess, fai
   try {
     const msgs = strippedMessages(messages)
     const result = await run(title, msgs)
-    messages.value.push({ role: 'bot', content: onSuccess(result, title) })
+    pushBotMessage(messages, onSuccess(result, title))
   } catch (err) {
-    messages.value.push({ role: 'bot', content: failPrefix + err.message })
+    pushBotMessage(messages, failPrefix + err.message)
   } finally {
     loadingRef.value = false
   }
@@ -133,7 +140,7 @@ export function useChatStorage() {
     if (hasUserMsg && !confirm(`恢复「${chat.title}」会替换当前对话，继续？`)) return
 
     if (loading.value) {
-      messages.value.push({ role: 'bot', content: '⚠️ 等 AI 回复完再恢复历史。' })
+      pushBotMessage(messages, '⚠️ 等 AI 回复完再恢复历史。')
       return
     }
 
