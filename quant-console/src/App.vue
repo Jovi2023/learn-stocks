@@ -28,6 +28,7 @@
         <CodePanel v-show="activeTab === 'code'" :loading="loading" @run="onPanelRun" />
         <DataPanel v-show="activeTab === 'data'" :loading="loading" @run="onPanelRun" />
         <AnalyzePanel v-show="activeTab === 'analyze'" :loading="loading" @run="onPanelRun" />
+        <FactorPanel v-show="activeTab === 'factor'" :loading="loading" @run="onPanelRun" />
       </aside>
     </div>
     <HistoryModal
@@ -50,6 +51,7 @@ import BacktestPanel from './components/panels/BacktestPanel.vue'
 import CodePanel from './components/panels/CodePanel.vue'
 import DataPanel from './components/panels/DataPanel.vue'
 import AnalyzePanel from './components/panels/AnalyzePanel.vue'
+import FactorPanel from './components/panels/FactorPanel.vue'
 import { useChat } from './composables/useChat.js'
 import { useChatStorage } from './composables/useChatStorage.js'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts.js'
@@ -61,6 +63,7 @@ const tabs = [
   { id: 'code', icon: '💻', label: '写代码' },
   { id: 'data', icon: '📈', label: '查数据' },
   { id: 'analyze', icon: '🧠', label: '分析' },
+  { id: 'factor', icon: '🧬', label: '因子' },
 ]
 
 const { messages, loading, send, cancel, restore } = useChat()

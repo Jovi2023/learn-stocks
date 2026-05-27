@@ -182,7 +182,7 @@ quant-console/
   - 自检：prod build 产物里 `https://api.jovi-trade.cn` 字符串仍在（minify 后合并为 1 份引用），bundle 145.52 kB / gzip 52.67 kB
 - [x] **`callKai` 加 AbortController + 取消按钮**（2026-05-20，commit `fb937cb`）
   - `callKai(input, { signal })` 接受可选 `AbortSignal`，透传给 `fetch`
-  - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(120_000)])` 合成「用户取消 + 120s 超时」双信号，并 `export cancel()`
+  - `useChat` 内部 `AbortSignal.any([userCtrl.signal, AbortSignal.timeout(300_000)])` 合成「用户取消 + 300s 超时」双信号，并 `export cancel()`
   - 错误分支三态：用户主动取消（`⏹ 已取消生成。`）/ 超时（`⏱ 请求超时…`）/ 其他错误（沿用原文案），靠 `userCtrl.signal.aborted` 区分前两者
   - `ChatPanel` 发送按钮在 `loading` 时变身红色 ⏹ 停止，单击 emit `cancel`；loading 时按 Enter 早退避免误触
   - 顺手补齐 AGENTS.md 第 4 节「fetch 必须带 AbortSignal 超时」的规约——之前是欠的
@@ -243,7 +243,7 @@ quant-console/
       "datasets": [{ "label": "序列名", "data": [1,2], "color": "#3b82f6" }] }
     ```
   - **渲染**：`messageParts.js` 拆分 → `ChatMessageBody.vue` + `KaiChart.vue`（Chart.js 按需 register line/bar）
-  - **Prompt**：`CHART_API_PREFIX` 自动拼进每次 API 请求（不进聊天记录）；`CHART_PROMPT_HINT` 可进 OpenClaw 系统提示
+  - **Prompt**：`CHART_API_PREFIX` 自动拼进每次 API 请求（不进聊天记录）；`CHART_PROMPT_HINT` + 因子协议已写入 OpenClaw `MEMORY.md`（`src/utils/kaiSystemPrompt.js`，`node scripts/sync-openclaw-prompt.mjs` 同步）
   - **兼容**：整段裸 JSON（合法时）当图表；`[embed …]` 替换为提示文案
   - 校验失败则原样当 markdown 代码块展示，不崩整条消息
 
@@ -254,6 +254,13 @@ quant-console/
     ```chart
     {"type":"line","title":"AAPL回测净值","labels":["2024-01","2024-02","2024-03"],"datasets":[{"label":"策略","data":[1,1.05,1.08]}]}
     ```
+
+  ### 🆕 因子工程协议（`src/utils/factorPrompt.js`）
+  - **OpenClaw 系统提示**：`kaiSystemPrompt.js` → `~/.openclaw/workspace/MEMORY.md`（`npm run sync:openclaw-prompt` 或 `node scripts/sync-openclaw-prompt.mjs`）
+  - **回复顺序**：先 **1 个** ` ```python ` → 再 **恰好 3 个** ` ```chart `（不可调换）
+  - **API 前缀**：因子任务（含 `【因子工程任务】`）时 `useChat` 额外拼 `FACTOR_API_PREFIX`
+  - **固定 3 图 title**：`Rank IC 与累计 IC`（line，Rank IC + 累计 IC）→ `分层回测累计收益`（line，Q1…Qn）→ `因子统计摘要`（bar，IC均值/ICIR/IC胜率/多空收益）
+  - 分层组数 N 由面板 `quantiles` 决定，chart2 的 `datasets` 数量须为 N
 - [x] **接 Pyodide，代码块"▶ 运行"按钮**（2026-05-27，C3）
   - `language-python` 代码块显示 ▶（与 📋 并列）；首次点击从 jsDelivr 懒加载 Pyodide 0.26.4，不打进 bundle
   - `pyodideRunner.js`：stdout 捕获、`exec` 跑用户代码、30s 超时、32k 字符上限
@@ -270,8 +277,8 @@ quant-console/
   - `eslint.config.js` flat config：`eslint-plugin-vue` + `@eslint/js`；`*.cjs` 单独 commonjs 规则
   - `prettier.config.js`：无分号、单引号、printWidth 100；与现有代码风格一致
   - 脚本：`npm run lint` / `lint:fix` / `format`；`ChatMessageBody.vue` 的 `v-html` 有 DOMPurify 说明 + eslint-disable
-- [ ] 录 30s 演示视频
-- [ ] 提交 ProductHunt
+- [ ] 录 30s 演示视频（暂缓，用户 2026-05-27 决定不做）
+- [ ] 提交 ProductHunt（暂缓，同上）
 
 ---
 

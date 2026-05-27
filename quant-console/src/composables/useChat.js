@@ -2,10 +2,10 @@ import { ref } from 'vue'
 import { callKai } from '../utils/api.js'
 import { formatChatError } from '../utils/chatError.js'
 import { CHART_API_PREFIX } from '../utils/chartSpec.js'
+import { FACTOR_API_PREFIX, isFactorTask } from '../utils/factorPrompt.js'
 
-// AI 接口超时上限。Kai 偶尔慢但 2 分钟没回基本可以判死了，
-// 避免 fetch 挂在那回收不掉。
-const REQUEST_TIMEOUT_MS = 120_000
+// AI 接口超时上限。因子工程等长任务常需 2–5 分钟；5 分钟无回再判死。
+const REQUEST_TIMEOUT_MS = 300_000
 
 const welcomeMsg = [
   '早上好 👋 我是 **凯**，你的量化助手。',
@@ -34,7 +34,10 @@ export function useChat() {
     // 用户取消 + 超时合成一个 signal；任一触发即 abort fetch
     const signal = AbortSignal.any([userCtrl.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
     try {
-      const result = await callKai(`${CHART_API_PREFIX}\n\n${text}`, { signal })
+      const apiPrefix = isFactorTask(text)
+        ? `${CHART_API_PREFIX}\n${FACTOR_API_PREFIX}`
+        : CHART_API_PREFIX
+      const result = await callKai(`${apiPrefix}\n\n${text}`, { signal })
       messages.value.push({ role: 'bot', content: result.text })
     } catch (err) {
       if (userCtrl.signal.aborted) {

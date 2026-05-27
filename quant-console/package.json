@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "sync:openclaw-prompt": "node scripts/sync-openclaw-prompt.mjs"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
