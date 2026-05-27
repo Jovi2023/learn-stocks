@@ -21,9 +21,9 @@
     <div class="input-area">
       <textarea
         v-model="inputText"
-        placeholder="描述你的量化需求… 比如：回测AAPL双均线策略"
+        placeholder="描述需求… Ctrl+Enter 发送，Alt+1~4 切换面板"
         rows="2"
-        @keydown.enter.exact="onEnter"
+        @keydown="onKeydown"
       ></textarea>
       <button
         class="send-btn"
@@ -63,11 +63,11 @@ watch(
   },
 )
 
-function onEnter(e) {
-  // 中文输入法选词期间按 Enter 是「确认候选词」，不该当作发送
-  if (e && e.isComposing) return
-  if (e) e.preventDefault()
-  // loading 时禁用 Enter 触发：避免误触把当前请求停掉
+function onKeydown(e) {
+  if (e.isComposing) return
+  const sendCombo = (e.ctrlKey || e.metaKey) && e.key === 'Enter'
+  if (!sendCombo) return
+  e.preventDefault()
   if (props.loading) return
   onSend()
 }

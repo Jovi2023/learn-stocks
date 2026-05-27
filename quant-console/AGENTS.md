@@ -369,6 +369,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 ### 审计 P2/P3 小修（2026-05-27）
 
 - [x] **离线/断连提示**（审计 #10）— `chatError.js` + `useChat`：`Failed to fetch` / `navigator.onLine` / 401 / 5xx 分场景文案，替代笼统 `err.message`
+- [x] **键盘快捷键**（审计 #9）— `useKeyboardShortcuts`：Alt+1~4 切右栏 tab；Esc 关历史 modal / 移动 drawer；`ChatPanel` 改为 Ctrl/Cmd+Enter 发送、Enter 换行
 
 ### 审计后推荐优先级
 
@@ -382,7 +383,7 @@ curl -X POST https://kai-github-proxy.<sub>.workers.dev/api/save-chat \
 | ~~🟡 P1~~ | ~~修复 A 股检测正则~~ | ~~#7~~ | ✅ 已完成 |
 | ~~🟡 P1~~ | ~~处理 untracked 评估文档~~ | ~~#4~~ | ✅ 已完成（保留仓库外归档） |
 | ~~🟢 P2~~ | ~~加 rate limit~~ | ~~#8~~ | 待做 |
-| 🟢 P2 | 键盘快捷键 | #9 | 1h |
+| ~~🟢 P2~~ | ~~键盘快捷键~~ | ~~#9~~ | ✅ 已完成 |
 | ~~🟢 P3~~ | ~~离线/断连提示~~ | ~~#10~~ | ✅ 已完成 |
 
 ---

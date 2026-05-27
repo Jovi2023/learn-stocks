@@ -52,6 +52,7 @@ import DataPanel from './components/panels/DataPanel.vue'
 import AnalyzePanel from './components/panels/AnalyzePanel.vue'
 import { useChat } from './composables/useChat.js'
 import { useChatStorage } from './composables/useChatStorage.js'
+import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts.js'
 
 const activeTab = ref('backtest')
 const drawerOpen = ref(false)
@@ -81,6 +82,12 @@ function onSwitchTab(id) {
   activeTab.value = id
   drawerOpen.value = true
 }
+
+useKeyboardShortcuts({
+  onSwitchTab,
+  onEscape: () => (showHistory.value ? closeHistory() : (drawerOpen.value = false)),
+  isOverlayOpen: () => showHistory.value,
+})
 
 function onPanelRun(prompt) {
   send(prompt)
